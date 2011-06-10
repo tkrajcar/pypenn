@@ -1,0 +1,64 @@
+[06/10 00:08:22] 1.8.3
+[06/10 00:08:22] MUSH restarted, PID 16268, at Fri Jun 10 00:08:22 2011
+[06/10 00:08:22] ANALYZING: data/indb
+[06/10 00:08:22] ANALYZING: data/indb (done)
+[06/10 00:08:22] LOADING: data/indb
+[06/10 00:08:22] Loading database saved on Fri Jun 10 04:08:15 2011 UTC
+[06/10 00:08:22] READING: done
+[06/10 00:08:22] LOADING: data/indb (done)
+[06/10 00:08:22] LOADING: data/maildb
+[06/10 00:08:22] LOADING: data/maildb (done)
+[06/10 00:08:22] LOADING: data/chatdb
+[06/10 00:08:22] LOADING: data/chatdb (done)
+[06/10 00:08:22] Access file access.cnf not found.
+[06/10 00:08:22] Reading /home/grrm/pytest/game/mush.cnf
+[06/10 00:08:22] Reading alias.cnf
+[06/10 00:08:22] Reading restrict.cnf
+[06/10 00:08:22] CONFIG: directive 'exit_flags' missing from cnf file, using default value.
+[06/10 00:08:22] PennPy: Initializing
+_DB_KEY_NAME = 0
+Traceback (most recent call last):
+  File "python/main.py", line 92, in <module>
+    import honor
+  File "python/honor.py", line 6, in <module>
+    import util
+  File "python/util.py", line 4, in <module>
+    from ll import ansistyle
+ImportError: No module named ll
+[06/10 00:08:22] PennPy: Failed to execute python/main.py
+[06/10 00:08:22] Seeding OpenSSL random number pool.
+[06/10 00:08:22] Seeded after 1 cycle.
+Unable to load server certificate - only anonymous ciphers supported.
+16268:error:02001002:system library:fopen:No such file or directory:bss_file.c:356:fopen('server-key.crt','r')
+16268:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:358:
+16268:error:140DC002:SSL routines:SSL_CTX_use_certificate_chain_file:system lib:ssl_rsa.c:722:
+Unable to load private key - only anonymous ciphers supported.
+16268:error:02001002:system library:fopen:No such file or directory:bss_file.c:356:fopen('server-key.crt','r')
+16268:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:358:
+16268:error:140B0002:SSL routines:SSL_CTX_use_PrivateKey_file:system lib:ssl_rsa.c:648:
+Unable to load CA certificates
+16268:error:02001002:system library:fopen:No such file or directory:bss_file.c:126:fopen('/usr/share/ssl/certs/ca-bundle.crt','r')
+16268:error:2006D080:BIO routines:BIO_new_file:no such file:bss_file.c:129:
+16268:error:0B084002:x509 certificate routines:X509_load_cert_crl_file:system lib:by_file.c:274:
+[06/10 00:08:22] Spawning info slave, communicating using socketpair, pid 16269
+[06/10 00:08:22] Unable to open reboot.db in mode 'r': No such file or directory
+Listening on port 8888 using IPv4.
+[06/10 00:08:22] 4090 file descriptors available.
+[06/10 00:08:22] RESTART FINISHED.
+info_slave: trying poll event loop... ok. Using poll.
+[06/10 00:13:28] RPT: SHUTDOWN by Rince(#3)
+
+[06/10 00:13:28] Terminating info_slave pid 16269
+[06/10 00:13:28] DUMPING: data/outdb.#1#
+[06/10 00:13:28] DUMPING: data/outdb.#1# (done)
+[06/10 00:13:28] PennPy: Finalizing
+[06/10 00:13:28] Process statistics:
+[06/10 00:13:28] Time used:            0 user            0 sys
+[06/10 00:13:28] Max res mem:       7664 pages    31391744 bytes
+[06/10 00:13:28] Integral mem:         0 shared          0 private          0 stack
+[06/10 00:13:28] Page faults:          1 hard         3100 soft             0 swapouts
+[06/10 00:13:28] Disk I/O:           160 reads        4296 writes
+[06/10 00:13:28] Network I/O:          0 in              0 out
+[06/10 00:13:28] Context swi:        317 vol            14 forced
+[06/10 00:13:28] Signals:              0
+[06/10 00:13:28] MUSH shutdown completed.

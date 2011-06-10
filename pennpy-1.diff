@@ -1,0 +1,1361 @@
+Index: configure
+===================================================================
+--- configure	(revision 3)
++++ configure	(revision 4)
+@@ -662,6 +662,13 @@
+ ac_ct_CXX
+ CXXFLAGS
+ CXX
++PYTHON_EXTRA_LDFLAGS
++PYTHON_EXTRA_LIBS
++PYTHON_SITE_PKG
++PYTHON_LDFLAGS
++PYTHON_CPPFLAGS
++PYTHON
++PYTHON_VERSION
+ EXCTAGS
+ ETAGS
+ CTAGS
+@@ -754,6 +761,7 @@
+ LIBS
+ CPPFLAGS
+ PERL
++PYTHON_VERSION
+ CXX
+ CXXFLAGS
+ CCC
+@@ -1418,6 +1426,10 @@
+   CPPFLAGS    C/C++/Objective C preprocessor flags, e.g. -I<include dir> if
+               you have headers in a nonstandard directory <include dir>
+   PERL        Absolute path to perl executable
++  PYTHON_VERSION
++              The installed Python version to use, for example '2.3'. This
++              string will be appended to the Python interpreter canonical
++              name.
+   CXX         C++ compiler command
+   CXXFLAGS    C++ compiler flags
+   SENDMAIL    Path to sendmail
+@@ -3823,6 +3835,424 @@
+ 
+ 
+ 
++# Embedded Python. --CU5
++
++
++	#
++	# Allow the use of a (user set) custom python version
++	#
++
++
++	# Extract the first word of "python[$PYTHON_VERSION]", so it can be a program name with args.
++set dummy python$PYTHON_VERSION; ac_word=$2
++{ $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
++$as_echo_n "checking for $ac_word... " >&6; }
++if test "${ac_cv_path_PYTHON+set}" = set; then
++  $as_echo_n "(cached) " >&6
++else
++  case $PYTHON in
++  [\\/]* | ?:[\\/]*)
++  ac_cv_path_PYTHON="$PYTHON" # Let the user override the test with a path.
++  ;;
++  *)
++  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
++for as_dir in $PATH
++do
++  IFS=$as_save_IFS
++  test -z "$as_dir" && as_dir=.
++  for ac_exec_ext in '' $ac_executable_extensions; do
++  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
++    ac_cv_path_PYTHON="$as_dir/$ac_word$ac_exec_ext"
++    $as_echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
++    break 2
++  fi
++done
++done
++IFS=$as_save_IFS
++
++  ;;
++esac
++fi
++PYTHON=$ac_cv_path_PYTHON
++if test -n "$PYTHON"; then
++  { $as_echo "$as_me:$LINENO: result: $PYTHON" >&5
++$as_echo "$PYTHON" >&6; }
++else
++  { $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++fi
++
++
++	if test -z "$PYTHON"; then
++	   { { $as_echo "$as_me:$LINENO: error: Cannot find python$PYTHON_VERSION in your system path" >&5
++$as_echo "$as_me: error: Cannot find python$PYTHON_VERSION in your system path" >&2;}
++   { (exit 1); exit 1; }; }
++	   PYTHON_VERSION=""
++	fi
++
++	#
++	# Check for a version of Python >= 2.1.0
++	#
++	{ $as_echo "$as_me:$LINENO: checking for a version of Python >= '2.1.0'" >&5
++$as_echo_n "checking for a version of Python >= '2.1.0'... " >&6; }
++	ac_supports_python_ver=`$PYTHON -c "import sys; \
++		ver = sys.version.split ()[0]; \
++		print (ver >= '2.1.0')"`
++	if test "$ac_supports_python_ver" != "True"; then
++		if test -z "$PYTHON_NOVERSIONCHECK"; then
++			{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++			{ { $as_echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
++$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
++{ { $as_echo "$as_me:$LINENO: error:
++This version of the AC_PYTHON_DEVEL macro
++doesn't work properly with versions of Python before
++2.1.0. You may need to re-run configure, setting the
++variables PYTHON_CPPFLAGS, PYTHON_LDFLAGS, PYTHON_SITE_PKG,
++PYTHON_EXTRA_LIBS and PYTHON_EXTRA_LDFLAGS by hand.
++Moreover, to disable this check, set PYTHON_NOVERSIONCHECK
++to something else than an empty string.
++
++See \`config.log' for more details." >&5
++$as_echo "$as_me: error:
++This version of the AC_PYTHON_DEVEL macro
++doesn't work properly with versions of Python before
++2.1.0. You may need to re-run configure, setting the
++variables PYTHON_CPPFLAGS, PYTHON_LDFLAGS, PYTHON_SITE_PKG,
++PYTHON_EXTRA_LIBS and PYTHON_EXTRA_LDFLAGS by hand.
++Moreover, to disable this check, set PYTHON_NOVERSIONCHECK
++to something else than an empty string.
++
++See \`config.log' for more details." >&2;}
++   { (exit 1); exit 1; }; }; }
++		else
++			{ $as_echo "$as_me:$LINENO: result: skip at user request" >&5
++$as_echo "skip at user request" >&6; }
++		fi
++	else
++		{ $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++	fi
++
++	#
++	# if the macro parameter ``version'' is set, honour it
++	#
++	if test -n ">= '2.5'"; then
++		{ $as_echo "$as_me:$LINENO: checking for a version of Python >= '2.5'" >&5
++$as_echo_n "checking for a version of Python >= '2.5'... " >&6; }
++		ac_supports_python_ver=`$PYTHON -c "import sys; \
++			ver = sys.version.split ()[0]; \
++			print (ver >= '2.5')"`
++		if test "$ac_supports_python_ver" = "True"; then
++	   	   { $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++		else
++			{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++			{ { $as_echo "$as_me:$LINENO: error: this package requires Python >= '2.5'.
++If you have it installed, but it isn't the default Python
++interpreter in your system path, please pass the PYTHON_VERSION
++variable to configure. See \`\`configure --help'' for reference.
++" >&5
++$as_echo "$as_me: error: this package requires Python >= '2.5'.
++If you have it installed, but it isn't the default Python
++interpreter in your system path, please pass the PYTHON_VERSION
++variable to configure. See \`\`configure --help'' for reference.
++" >&2;}
++   { (exit 1); exit 1; }; }
++			PYTHON_VERSION=""
++		fi
++	fi
++
++	#
++	# Check if you have distutils, else fail
++	#
++	{ $as_echo "$as_me:$LINENO: checking for the distutils Python package" >&5
++$as_echo_n "checking for the distutils Python package... " >&6; }
++	ac_distutils_result=`$PYTHON -c "import distutils" 2>&1`
++	if test -z "$ac_distutils_result"; then
++		{ $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++	else
++		{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++		{ { $as_echo "$as_me:$LINENO: error: cannot import Python module \"distutils\".
++Please check your Python installation. The error was:
++$ac_distutils_result" >&5
++$as_echo "$as_me: error: cannot import Python module \"distutils\".
++Please check your Python installation. The error was:
++$ac_distutils_result" >&2;}
++   { (exit 1); exit 1; }; }
++		PYTHON_VERSION=""
++	fi
++
++	#
++	# Check for Python include path
++	#
++	{ $as_echo "$as_me:$LINENO: checking for Python include path" >&5
++$as_echo_n "checking for Python include path... " >&6; }
++	if test -z "$PYTHON_CPPFLAGS"; then
++		python_path=`$PYTHON -c "import distutils.sysconfig; \
++           		print (distutils.sysconfig.get_python_inc ());"`
++		if test -n "${python_path}"; then
++		   	python_path="-I$python_path"
++		fi
++		PYTHON_CPPFLAGS=$python_path
++	fi
++	{ $as_echo "$as_me:$LINENO: result: $PYTHON_CPPFLAGS" >&5
++$as_echo "$PYTHON_CPPFLAGS" >&6; }
++
++
++	#
++	# Check for Python library path
++	#
++	{ $as_echo "$as_me:$LINENO: checking for Python library path" >&5
++$as_echo_n "checking for Python library path... " >&6; }
++	if test -z "$PYTHON_LDFLAGS"; then
++		# (makes two attempts to ensure we've got a version number
++		# from the interpreter)
++		ac_python_version=`cat<<EOD | $PYTHON -
++
++# join all versioning strings, on some systems
++# major/minor numbers could be in different list elements
++from distutils.sysconfig import *
++ret = ''
++for e in get_config_vars ('VERSION'):
++	if (e != None):
++		ret += e
++print (ret)
++EOD`
++
++		if test -z "$ac_python_version"; then
++			if test -n "$PYTHON_VERSION"; then
++				ac_python_version=$PYTHON_VERSION
++			else
++				ac_python_version=`$PYTHON -c "import sys; \
++					print (sys.version[:3])"`
++			fi
++		fi
++
++		# Make the versioning information available to the compiler
++
++cat >>confdefs.h <<_ACEOF
++#define HAVE_PYTHON "$ac_python_version"
++_ACEOF
++
++
++		# First, the library directory:
++		ac_python_libdir=`cat<<EOD | $PYTHON -
++
++# There should be only one
++import distutils.sysconfig
++for e in distutils.sysconfig.get_config_vars ('LIBDIR'):
++	if e != None:
++		print (e)
++		break
++EOD`
++
++		# Before checking for libpythonX.Y, we need to know
++		# the extension the OS we're on uses for libraries
++		# (we take the first one, if there's more than one fix me!):
++		ac_python_soext=`$PYTHON -c \
++		  "import distutils.sysconfig; \
++		  print (distutils.sysconfig.get_config_vars('SO')[0])"`
++
++		# Now, for the library:
++		ac_python_soname=`$PYTHON -c \
++		  "import distutils.sysconfig; \
++		  print (distutils.sysconfig.get_config_vars('LDLIBRARY')[0])"`
++
++		# Strip away extension from the end to canonicalize its name:
++		ac_python_library=`echo "$ac_python_soname" | sed "s/${ac_python_soext}$//"`
++
++		# This small piece shamelessly adapted from PostgreSQL python macro;
++		# credits goes to momjian, I think. I'd like to put the right name
++		# in the credits, if someone can point me in the right direction... ?
++		#
++		if test -n "$ac_python_libdir" -a -n "$ac_python_library" \
++			-a x"$ac_python_library" != x"$ac_python_soname"
++		then
++			# use the official shared library
++			ac_python_library=`echo "$ac_python_library" | sed "s/^lib//"`
++			PYTHON_LDFLAGS="-L$ac_python_libdir -l$ac_python_library"
++		else
++			# old way: use libpython from python_configdir
++			ac_python_libdir=`$PYTHON -c \
++			  "from distutils.sysconfig import get_python_lib as f; \
++			  import os; \
++			  print (os.path.join(f(plat_specific=1, standard_lib=1), 'config'));"`
++			PYTHON_LDFLAGS="-L$ac_python_libdir -lpython$ac_python_version"
++		fi
++
++		if test -z "PYTHON_LDFLAGS"; then
++			{ { $as_echo "$as_me:$LINENO: error:
++  Cannot determine location of your Python DSO. Please check it was installed with
++  dynamic libraries enabled, or try setting PYTHON_LDFLAGS by hand.
++			" >&5
++$as_echo "$as_me: error:
++  Cannot determine location of your Python DSO. Please check it was installed with
++  dynamic libraries enabled, or try setting PYTHON_LDFLAGS by hand.
++			" >&2;}
++   { (exit 1); exit 1; }; }
++		fi
++	fi
++	{ $as_echo "$as_me:$LINENO: result: $PYTHON_LDFLAGS" >&5
++$as_echo "$PYTHON_LDFLAGS" >&6; }
++
++
++	#
++	# Check for site packages
++	#
++	{ $as_echo "$as_me:$LINENO: checking for Python site-packages path" >&5
++$as_echo_n "checking for Python site-packages path... " >&6; }
++	if test -z "$PYTHON_SITE_PKG"; then
++		PYTHON_SITE_PKG=`$PYTHON -c "import distutils.sysconfig; \
++		        print (distutils.sysconfig.get_python_lib(0,0));"`
++	fi
++	{ $as_echo "$as_me:$LINENO: result: $PYTHON_SITE_PKG" >&5
++$as_echo "$PYTHON_SITE_PKG" >&6; }
++
++
++	#
++	# libraries which must be linked in when embedding
++	#
++	{ $as_echo "$as_me:$LINENO: checking python extra libraries" >&5
++$as_echo_n "checking python extra libraries... " >&6; }
++	if test -z "$PYTHON_EXTRA_LIBS"; then
++	   PYTHON_EXTRA_LIBS=`$PYTHON -c "import distutils.sysconfig; \
++                conf = distutils.sysconfig.get_config_var; \
++                print (conf('LOCALMODLIBS') + ' ' + conf('LIBS'))"`
++	fi
++	{ $as_echo "$as_me:$LINENO: result: $PYTHON_EXTRA_LIBS" >&5
++$as_echo "$PYTHON_EXTRA_LIBS" >&6; }
++
++
++	#
++	# linking flags needed when embedding
++	#
++	{ $as_echo "$as_me:$LINENO: checking python extra linking flags" >&5
++$as_echo_n "checking python extra linking flags... " >&6; }
++	if test -z "$PYTHON_EXTRA_LDFLAGS"; then
++		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import distutils.sysconfig; \
++			conf = distutils.sysconfig.get_config_var; \
++			print (conf('LINKFORSHARED'))"`
++	fi
++	{ $as_echo "$as_me:$LINENO: result: $PYTHON_EXTRA_LDFLAGS" >&5
++$as_echo "$PYTHON_EXTRA_LDFLAGS" >&6; }
++
++
++	#
++	# final check to see if everything compiles alright
++	#
++	{ $as_echo "$as_me:$LINENO: checking consistency of all components of python development environment" >&5
++$as_echo_n "checking consistency of all components of python development environment... " >&6; }
++	# save current global flags
++	LIBS="$ac_save_LIBS $PYTHON_LDFLAGS $PYTHON_EXTRA_LDFLAGS $PYTHON_EXTRA_LIBS"
++	CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
++	ac_ext=c
++ac_cpp='$CPP $CPPFLAGS'
++ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++ac_compiler_gnu=$ac_cv_c_compiler_gnu
++
++	cat >conftest.$ac_ext <<_ACEOF
++
++		/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++#include <Python.h>
++int
++main ()
++{
++Py_Initialize();
++  ;
++  return 0;
++}
++
++_ACEOF
++rm -f conftest.$ac_objext conftest$ac_exeext
++if { (ac_try="$ac_link"
++case "(($ac_try" in
++  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
++  *) ac_try_echo=$ac_try;;
++esac
++eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
++$as_echo "$ac_try_echo") >&5
++  (eval "$ac_link") 2>conftest.er1
++  ac_status=$?
++  grep -v '^ *+' conftest.er1 >conftest.err
++  rm -f conftest.er1
++  cat conftest.err >&5
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); } && {
++	 test -z "$ac_c_werror_flag" ||
++	 test ! -s conftest.err
++       } && test -s conftest$ac_exeext && {
++	 test "$cross_compiling" = yes ||
++	 $as_test_x conftest$ac_exeext
++       }; then
++  pythonexists=yes
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++	pythonexists=no
++fi
++
++rm -rf conftest.dSYM
++rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
++      conftest$ac_exeext conftest.$ac_ext
++	ac_ext=c
++ac_cpp='$CPP $CPPFLAGS'
++ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
++ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
++ac_compiler_gnu=$ac_cv_c_compiler_gnu
++
++	# turn back to default flags
++	CPPFLAGS="$ac_save_CPPFLAGS"
++	LIBS="$ac_save_LIBS"
++
++	{ $as_echo "$as_me:$LINENO: result: $pythonexists" >&5
++$as_echo "$pythonexists" >&6; }
++
++        if test ! "x$pythonexists" = "xyes"; then
++	   { { $as_echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
++$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
++{ { $as_echo "$as_me:$LINENO: error:
++  Could not link test program to Python. Maybe the main Python library has been
++  installed in some non-standard library path. If so, pass it to configure,
++  via the LDFLAGS environment variable.
++  Example: ./configure LDFLAGS=\"-L/usr/non-standard-path/python/lib\"
++  ============================================================================
++   ERROR!
++   You probably have to install the development version of the Python package
++   for your distribution.  The exact name of this package varies among them.
++  ============================================================================
++
++See \`config.log' for more details." >&5
++$as_echo "$as_me: error:
++  Could not link test program to Python. Maybe the main Python library has been
++  installed in some non-standard library path. If so, pass it to configure,
++  via the LDFLAGS environment variable.
++  Example: ./configure LDFLAGS=\"-L/usr/non-standard-path/python/lib\"
++  ============================================================================
++   ERROR!
++   You probably have to install the development version of the Python package
++   for your distribution.  The exact name of this package varies among them.
++  ============================================================================
++
++See \`config.log' for more details." >&2;}
++   { (exit 1); exit 1; }; }; }
++	  PYTHON_VERSION=""
++	fi
++
++	#
++	# all done!
++	#
++
++
+ # Set good debug and warning options if using gcc
+ # and custom CFLAGS aren't being used.
+ # Todo: Look into the warnings setting macros in the autoconf archive,
+@@ -4429,7 +4859,6 @@
+ 
+ 
+ 
+-
+   flag=`echo "-Wl,-z,noexecstack" | $SED 'y% .=/+-(){}<>:*,%_______________%'`
+ 
+   { $as_echo "$as_me:$LINENO: checking whether the linker accepts the -Wl,-z,noexecstack flag" >&5
+Index: Makefile.in
+===================================================================
+--- Makefile.in	(revision 3)
++++ Makefile.in	(revision 4)
+@@ -20,9 +20,9 @@
+ SQL_CFLAGS=@MYSQL_CFLAGS@ @POSTGRESQL_CFLAGS@ @SQLITE3_CFLAGS@
+ SQL_LDFLAGS=@MYSQL_LDFLAGS@ @POSTGRESQL_LDFLAGS@ @SQLITE3_LDFLAGS@
+ 
+-CCFLAGS=@CFLAGS@ -I.. -I../hdrs @CPPFLAGS@ @PCRE_CFLAGS@
+-LDFLAGS=@LDFLAGS@ 
+-CLIBS=@LIBS@ @PCRE_LIBS@
++CCFLAGS=@CFLAGS@ -I.. -I../hdrs @CPPFLAGS@ @PCRE_CFLAGS@ @PYTHON_CPPFLAGS@
++LDFLAGS=@LDFLAGS@ @PYTHON_LDFLAGS@ @PYTHON_EXTRA_LDFLAGS@
++CLIBS=@LIBS@ @PCRE_LIBS@ @PYTHON_EXTRA_LIBS@
+ INSTALL=@INSTALL@
+ INSTALLDIR=$installdir
+ CP=@CP@
+Index: patches/cu5-pennpy
+===================================================================
+--- patches/cu5-pennpy	(revision 0)
++++ patches/cu5-pennpy	(revision 4)
+@@ -0,0 +1,2 @@
++# Patch name: CU5-PennPy
++# Patch version: 0.0
+Index: src/Makefile.in
+===================================================================
+--- src/Makefile.in	(revision 3)
++++ src/Makefile.in	(revision 4)
+@@ -23,7 +23,7 @@
+ 	plyrlist.c predicat.c privtab.c info_master.c ptab.c rob.c	\
+ 	services.c set.c SFMT.c shs.c sig.c sort.c speech.c sql.c strdup.c	\
+ 	strtree.c strutil.c tables.c timer.c unparse.c utils.c		\
+-	version.c wait.c warnings.c wild.c wiz.c
++	version.c wait.c warnings.c wild.c wiz.c pennpy.c
+ 
+ 
+ # .o versions of above - these are used in the build
+@@ -38,7 +38,7 @@
+ 	plyrlist.o info_master.o predicat.o privtab.o ptab.o rob.o	\
+ 	services.o set.o SFMT.o shs.o sig.o sort.o speech.o sql.o strdup.o	\
+ 	strtree.o strutil.o tables.o timer.o unparse.o utils.o		\
+-	version.o wait.o warnings.o wild.o wiz.o
++	version.o wait.o warnings.o wild.o wiz.o pennpy.o
+ 
+ # This is a dummy target, in case you type 'make' in the source
+ # directory (likely for emacs users who M-x compile.)
+@@ -189,6 +189,11 @@
+ # Some dependencies that make depend doesn't handle well
+ compress.o: comp_h.c comp_w.c comp_w8.c
+ 
++# PennPy dependencies. --CU5
++# Cheat a bit by recompiling whenever we recompile flaglocal.o/funlocal.o.
++pennpy.o: flaglocal.o funlocal.o ../hdrs/pennpy.h ../hdrs/log.h
++bsd.o flags.o function.o game.o: ../hdrs/pennpy.h
++
+ # DO NOT DELETE THIS LINE -- make depend depends on it.
+ 
+ access.o: ../config.h
+Index: src/function.c
+===================================================================
+--- src/function.c	(revision 3)
++++ src/function.c	(revision 4)
+@@ -30,6 +30,8 @@
+ #include "confmagic.h"
+ #include "ansi.h"
+ 
++#include "pennpy.h"
++
+ static void func_hash_insert(const char *name, FUN *func);
+ extern void local_functions(void);
+ static int apply_restrictions(unsigned int result, const char *restriction);
+@@ -912,6 +914,7 @@
+   for (ftp = flist; ftp->name; ftp++) {
+     function_add(ftp->name, ftp->fun, ftp->minargs, ftp->maxargs, ftp->flags);
+   }
++  cu5_pennpy_functions();
+   local_functions();
+ }
+ 
+Index: src/bsd.c
+===================================================================
+--- src/bsd.c	(revision 3)
++++ src/bsd.c	(revision 4)
+@@ -131,6 +131,8 @@
+ #include "intmap.h"
+ #include "confmagic.h"
+ 
++#include "pennpy.h"
++
+ #ifdef HAS_GETRLIMIT
+ void init_rlimit(void);
+ #endif
+@@ -639,6 +641,7 @@
+   dump_database();
+ 
+   local_shutdown();
++  cu5_pennpy_finalize();
+ 
+   end_all_logs();
+ 
+@@ -4692,6 +4695,7 @@
+   kill_info_slave();
+ #endif
+   local_shutdown();
++  cu5_pennpy_finalize();
+   end_all_logs();
+ #ifndef WIN32
+   {
+Index: src/pennpy.c
+===================================================================
+--- src/pennpy.c	(revision 0)
++++ src/pennpy.c	(revision 4)
+@@ -0,0 +1,260 @@
++#define PY_SSIZE_T_CLEAN
++#include <Python.h>
++
++#include <assert.h>
++
++/* PennMUSH headers. */
++#include "config.h"
++#include "conf.h"
++#include "externs.h"
++#include "flags.h"
++#include "parse.h"
++#include "function.h"
++#include "log.h"
++
++#include "pennpy.h"
++
++/*
++ * Python to PennMUSH.
++ */
++
++/* Reference to __main__.  Only usable when the interpreter is initialized. */
++static PyObject *cu5_pennpy_main = NULL;
++
++static PyObject *
++cu5_pennpy_example(PyObject *self, PyObject *args)
++{
++	const char *arg0_ptr;
++	Py_ssize_t arg0_len;
++
++	if (!PyArg_ParseTuple(args, "s#", &arg0_ptr, &arg0_len)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	return PyInt_FromSsize_t(arg0_len);
++}
++
++static PyMethodDef cu5_pennpy_module[] = {
++	{
++		"example", cu5_pennpy_example, METH_VARARGS,
++		"example(arg): Equivalent to len(arg)"
++	},
++
++	{ NULL, NULL, 0, NULL }
++};
++
++/*
++ * PennMUSH to Python.
++ */
++
++static void
++cu5_pennpy_exception(char *buff, char **bp)
++{
++	/* Dump the stack to stderr and clear the error indicator. */
++	do_rawlog(LT_ERR, "PennPy: Python exception:");
++	PyErr_Print();
++
++	/*
++	 * Report exception.  We don't return specifics; if you need them,
++	 * handle that in the Python code and return a string.
++	 */
++	safe_str(T("#-1 PYTHON EXCEPTION"), buff, bp);
++}
++
++static PyObject *
++cu5_pennpy_args(int nargs, char *args[], int arglens[])
++{
++	PyObject *args_obj;
++	int ii;
++
++	if (!(args_obj = PyTuple_New(nargs))) {
++		/* Out of memory. */
++		PyErr_Clear();
++		return NULL;
++	}
++
++	for (ii = 0; ii < nargs; ii++) {
++		PyObject *str_obj;
++
++		str_obj = PyString_FromStringAndSize(args[ii], arglens[ii]);
++		if (!str_obj) {
++			/*
++			 * Out of memory.  We need to finish initializing the
++			 * tuple before we free it, so we set remaining tuple
++			 * fields to Py_INCREF(Py_None).
++			 *
++			 * This should be pretty rare, so speed is unimportant.
++			 */
++			for (; ii < nargs; ii++) {
++				Py_INCREF(Py_None);
++				PyTuple_SET_ITEM(args_obj, ii, Py_None);
++			}
++
++			/* Free tuple. */
++			Py_DECREF(args_obj);
++			return NULL;
++		}
++
++		PyTuple_SET_ITEM(args_obj, ii, str_obj);
++	}
++
++	return args_obj;
++}
++
++FUNCTION(cu5_pennpy_fun_pyeval)
++{
++	PyObject *result;
++
++	assert(nargs == 1);
++
++	/* Check for PyEval permission. */
++	if (!has_power_by_name(executor, "PyEval", NOTYPE)) {
++		safe_str(T(e_perm), buff, bp);
++		return;
++	}
++
++	/* Evalute string. */
++	/* FIXME: Return exception info. */
++
++	/* Return result as a string. */
++}
++
++FUNCTION(cu5_pennpy_fun_pycall)
++{
++	PyObject *result, *call_obj, *args_obj;
++	char *result_str;
++
++	assert(nargs > 0);
++
++	/* Check for PyCall permission. */
++	if (!has_power_by_name(executor, "PyCall", NOTYPE)) {
++		safe_str(T(e_perm), buff, bp);
++		return;
++	}
++
++	/* Find function. */
++	if (!(call_obj = PyObject_GetAttrString(cu5_pennpy_main, args[0]))) {
++		PyErr_Clear();
++		safe_str(T(e_match), buff, bp);
++		return;
++	}
++
++	if (!PyCallable_Check(call_obj)) {
++		Py_DECREF(call_obj);
++		safe_str(T("#-1 NOT CALLABLE"), buff, bp);
++		return;
++	}
++
++	/* Collect arguments. */
++	if (!(args_obj = cu5_pennpy_args(nargs - 1, args + 1, arglens + 1))) {
++		/* Shouldn't happen normally.  Maybe just panic. */
++		Py_DECREF(call_obj);
++		safe_str(T("#-1 INTERNAL ERROR"), buff, bp);
++		return;
++	}
++
++	/* Call function with arguments. */
++	result = PyObject_CallObject(call_obj, args_obj);
++	Py_DECREF(call_obj);
++	Py_XDECREF(args_obj);
++
++	if (!result) {
++		/* Call threw exception. */
++		cu5_pennpy_exception(buff, bp);
++		return;
++	}
++
++	/* Return result as a string. */
++	if (result == Py_None) {
++		/* No return value. */
++	} else if (!(result_str = PyString_AsString(result))) {
++		/* Not a string. */
++		PyErr_Clear();
++		safe_str(T("#-1 RETURN TYPE ERROR"), buff, bp);
++	} else {
++		/* String. */
++		safe_str(result_str, buff, bp);
++	}
++
++	Py_DECREF(result);
++}
++
++void
++cu5_pennpy_functions(void)
++{
++	function_add("PYEVAL", cu5_pennpy_fun_pyeval, 1, 1, FN_WIZARD);
++	function_add("PYCALL", cu5_pennpy_fun_pycall, 1, INT_MAX, FN_WIZARD);
++}
++
++/*
++ * Startup/shutdown stuff.
++ */
++
++void
++cu5_pennpy_initialize(void)
++{
++	FILE *main_py_fp;
++
++	assert(cu5_pennpy_main == NULL);
++
++	do_rawlog(LT_ERR, T("Initializing PennPy"));
++
++	/* Initialize Python without installing signal handlers. */
++	Py_InitializeEx(0);
++
++	/* Export hooks as pennmush module. */
++	if (!Py_InitModule("pennmush", cu5_pennpy_module)) {
++		/* Can't initialize pennmush module. */
++		mush_panic(T("PennPy: Can't initialize pennmush module"));
++	}
++
++	/* Execute game/python/main.py. */
++	if (!(main_py_fp = fopen("python/main.py", "r"))) {
++		/* Can't run main.py. */
++		mush_panic(T("PennPy: Can't open python/main.py"));
++	}
++
++	if (PyRun_SimpleFile(main_py_fp, "python/main.py") != 0) {
++		/* Something wrong with main.py. */
++		mush_panic(T("PennPy: Failed to execute python/main.py"));
++	}
++
++	/* Borrow a reference to __main__. */
++	if (!(cu5_pennpy_main = PyImport_AddModule("__main__"))) {
++		/* This shouldn't happen, but you never know. */
++		mush_panic(T("PennPy: Can't get reference to __main__"));
++	}
++}
++
++void
++cu5_pennpy_finalize(void)
++{
++	assert(cu5_pennpy_main != NULL);
++
++	do_rawlog(LT_ERR, T("Finalizing PennPy"));
++
++	/* Clean up (some) Python interpreter resources.  Not exhaustive. */
++	Py_Finalize();
++}
++
++void
++cu5_pennpy_flags(FLAGSPACE *flags __attribute__ ((__unused__)))
++{
++	if (strcmp(flags->name, "POWER") == 0) {
++		/*
++		 * Granting the PyEval power is highly dangerous.  Note that
++		 * the full capabilities of the Python environment will be
++		 * available to any object with PyEval powers.
++		 */
++		add_power("PyEval", '\0', NOTYPE, F_GOD | F_LOG, F_GOD);
++
++		/*
++		 * Granting the PyCall power is less dangerous.  It's slightly
++		 * more dangerous than hard code, though, because you can
++		 * inject dangerous code at runtime via PyEval(), then execute
++		 * it using just PyCall().
++		 */
++		add_power("PyCall", '\0', NOTYPE, F_WIZARD | F_LOG, F_WIZARD);
++	}
++}
+
+Property changes on: src/pennpy.c
+___________________________________________________________________
+Added: svn:eol-style
+   + native
+
+Index: src/flags.c
+===================================================================
+--- src/flags.c	(revision 3)
++++ src/flags.c	(revision 4)
+@@ -52,7 +52,9 @@
+ #include "oldflags.h"
+ #include "confmagic.h"
+ 
++#include "pennpy.h"
+ 
++
+ static int can_set_flag(dbref player, dbref thing, FLAG *flagp, int negate);
+ static FLAG *letter_to_flagptr(FLAGSPACE *n, char c, int type);
+ static void flag_add(FLAGSPACE *n, const char *name, FLAG *f);
+@@ -929,6 +931,7 @@
+       flag_add(flags, "steal_money", f);
+   }
+ 
++  cu5_pennpy_flags(n);
+   local_flags(n);
+ }
+ 
+Index: src/game.c
+===================================================================
+--- src/game.c	(revision 3)
++++ src/game.c	(revision 4)
+@@ -81,6 +81,8 @@
+ 
+ #include "confmagic.h"
+ 
++#include "pennpy.h"
++
+ /* declarations */
+ GLOBALTAB globals = { 0, "", 0, 0, 0, 0, 0, 0, 0, 0 };
+ 
+@@ -773,6 +775,7 @@
+   config_file_startup(conf, 1);
+   validate_config();
+   /* Call Local Startup */
++  cu5_pennpy_initialize();
+   local_startup();
+   /* everything else ok. Restart all objects. */
+   do_restart();
+Index: game/python/hidden.py
+===================================================================
+--- game/python/hidden.py	(revision 0)
++++ game/python/hidden.py	(revision 4)
+@@ -0,0 +1,2 @@
++def hidden():
++	return 'inaccessible!'
+
+Property changes on: game/python/hidden.py
+___________________________________________________________________
+Added: svn:eol-style
+   + native
+
+Index: game/python/pennmush.py
+===================================================================
+--- game/python/pennmush.py	(revision 0)
++++ game/python/pennmush.py	(revision 4)
+@@ -0,0 +1 @@
++# Stub module for testing PennPy code without PennMUSH.
+
+Property changes on: game/python/pennmush.py
+___________________________________________________________________
+Added: svn:eol-style
+   + native
+
+Index: game/python/main.py
+===================================================================
+--- game/python/main.py	(revision 0)
++++ game/python/main.py	(revision 4)
+@@ -0,0 +1,50 @@
++# Entry point from PennPy.
++
++#
++# Fiddle with our runtime environment.
++#
++import sys
++
++# PennMUSH closes stdin and stdout, so redirect to stderr for safety.
++sys.stdin = sys.stderr
++sys.stdout = sys.stderr
++
++# Include GAMEDIR/python in our import path.
++sys.path.insert(0, 'python')
++
++del sys
++
++#
++# Some test code for now.
++#
++import pennmush
++
++print "PennPy:", pennmush.example('hello world')
++
++try:
++	pennmush.example()
++except:
++	print "o noes"
++
++try:
++	pennmush.example("1", "2")
++except:
++	print "o noes 2"
++
++try:
++	pennmush.example(3)
++except:
++	print "o noes 3"
++
++print 'PennPy: pennmush.example[', pennmush.example.__doc__, ']'
++
++def smoosh_string(*args):
++	return ' '.join(args)
++
++def test_fun(arg):
++	return 42
++
++def empty_fun():
++	pass
++
++import hidden
+
+Property changes on: game/python/main.py
+___________________________________________________________________
+Added: svn:eol-style
+   + native
+
+Index: configure.in
+===================================================================
+--- configure.in	(revision 3)
++++ configure.in	(revision 4)
+@@ -43,6 +43,9 @@
+ AC_PATH_PROG(ETAGS, etags)
+ AC_PATH_PROG(EXCTAGS, exctags)
+ 
++# Embedded Python. --CU5
++AC_PYTHON_DEVEL([>= '2.5'])
++
+ # Set good debug and warning options if using gcc
+ # and custom CFLAGS aren't being used.
+ # Todo: Look into the warnings setting macros in the autoconf archive,
+Index: hdrs/pennpy.h
+===================================================================
+--- hdrs/pennpy.h	(revision 0)
++++ hdrs/pennpy.h	(revision 4)
+@@ -0,0 +1,11 @@
++#ifndef CU5_PENNPY_H
++#define CU5_PENNPY_H
++
++#include "flags.h"
++
++void cu5_pennpy_initialize(void);
++void cu5_pennpy_finalize(void);
++void cu5_pennpy_flags(FLAGSPACE *flags);
++void cu5_pennpy_functions(void);
++
++#endif /* undef CU5_PENNPY_H */
+
+Property changes on: hdrs/pennpy.h
+___________________________________________________________________
+Added: svn:eol-style
+   + native
+
+Index: aclocal.m4
+===================================================================
+--- aclocal.m4	(revision 3)
++++ aclocal.m4	(revision 4)
+@@ -1318,3 +1318,324 @@
+     $5
+   ])
+ ])
++
++# ===========================================================================
++#         http://www.nongnu.org/autoconf-archive/ac_python_devel.html
++# ===========================================================================
++#
++# SYNOPSIS
++#
++#   AC_PYTHON_DEVEL([version])
++#
++# DESCRIPTION
++#
++#   Note: Defines as a precious variable "PYTHON_VERSION". Don't override it
++#   in your configure.ac.
++#
++#   This macro checks for Python and tries to get the include path to
++#   'Python.h'. It provides the $(PYTHON_CPPFLAGS) and $(PYTHON_LDFLAGS)
++#   output variables. It also exports $(PYTHON_EXTRA_LIBS) and
++#   $(PYTHON_EXTRA_LDFLAGS) for embedding Python in your code.
++#
++#   You can search for some particular version of Python by passing a
++#   parameter to this macro, for example ">= '2.3.1'", or "== '2.4'". Please
++#   note that you *have* to pass also an operator along with the version to
++#   match, and pay special attention to the single quotes surrounding the
++#   version number. Don't use "PYTHON_VERSION" for this: that environment
++#   variable is declared as precious and thus reserved for the end-user.
++#
++#   This macro should work for all versions of Python >= 2.1.0. As an end
++#   user, you can disable the check for the python version by setting the
++#   PYTHON_NOVERSIONCHECK environment variable to something else than the
++#   empty string.
++#
++#   If you need to use this macro for an older Python version, please
++#   contact the authors. We're always open for feedback.
++#
++# LICENSE
++#
++#   Copyright (c) 2009 Sebastian Huber <sebastian-huber@web.de>
++#   Copyright (c) 2009 Alan W. Irwin <irwin@beluga.phys.uvic.ca>
++#   Copyright (c) 2009 Rafael Laboissiere <rafael@laboissiere.net>
++#   Copyright (c) 2009 Andrew Collier <colliera@ukzn.ac.za>
++#   Copyright (c) 2009 Matteo Settenvini <matteo@member.fsf.org>
++#   Copyright (c) 2009 Horst Knorr <hk_classes@knoda.org>
++#
++#   This program is free software: you can redistribute it and/or modify it
++#   under the terms of the GNU General Public License as published by the
++#   Free Software Foundation, either version 3 of the License, or (at your
++#   option) any later version.
++#
++#   This program is distributed in the hope that it will be useful, but
++#   WITHOUT ANY WARRANTY; without even the implied warranty of
++#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
++#   Public License for more details.
++#
++#   You should have received a copy of the GNU General Public License along
++#   with this program. If not, see <http://www.gnu.org/licenses/>.
++#
++#   As a special exception, the respective Autoconf Macro's copyright owner
++#   gives unlimited permission to copy, distribute and modify the configure
++#   scripts that are the output of Autoconf when processing the Macro. You
++#   need not follow the terms of the GNU General Public License when using
++#   or distributing such scripts, even though portions of the text of the
++#   Macro appear in them. The GNU General Public License (GPL) does govern
++#   all other use of the material that constitutes the Autoconf Macro.
++#
++#   This special exception to the GPL applies to versions of the Autoconf
++#   Macro released by the Autoconf Archive. When you make and distribute a
++#   modified version of the Autoconf Macro, you may extend this special
++#   exception to the GPL to apply to your modified version as well.
++
++AC_DEFUN([AC_PYTHON_DEVEL],[
++	#
++	# Allow the use of a (user set) custom python version
++	#
++	AC_ARG_VAR([PYTHON_VERSION],[The installed Python
++		version to use, for example '2.3'. This string
++		will be appended to the Python interpreter
++		canonical name.])
++
++	AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
++	if test -z "$PYTHON"; then
++	   AC_MSG_ERROR([Cannot find python$PYTHON_VERSION in your system path])
++	   PYTHON_VERSION=""
++	fi
++
++	#
++	# Check for a version of Python >= 2.1.0
++	#
++	AC_MSG_CHECKING([for a version of Python >= '2.1.0'])
++	ac_supports_python_ver=`$PYTHON -c "import sys; \
++		ver = sys.version.split ()[[0]]; \
++		print (ver >= '2.1.0')"`
++	if test "$ac_supports_python_ver" != "True"; then
++		if test -z "$PYTHON_NOVERSIONCHECK"; then
++			AC_MSG_RESULT([no])
++			AC_MSG_FAILURE([
++This version of the AC@&t@_PYTHON_DEVEL macro
++doesn't work properly with versions of Python before
++2.1.0. You may need to re-run configure, setting the
++variables PYTHON_CPPFLAGS, PYTHON_LDFLAGS, PYTHON_SITE_PKG,
++PYTHON_EXTRA_LIBS and PYTHON_EXTRA_LDFLAGS by hand.
++Moreover, to disable this check, set PYTHON_NOVERSIONCHECK
++to something else than an empty string.
++])
++		else
++			AC_MSG_RESULT([skip at user request])
++		fi
++	else
++		AC_MSG_RESULT([yes])
++	fi
++
++	#
++	# if the macro parameter ``version'' is set, honour it
++	#
++	if test -n "$1"; then
++		AC_MSG_CHECKING([for a version of Python $1])
++		ac_supports_python_ver=`$PYTHON -c "import sys; \
++			ver = sys.version.split ()[[0]]; \
++			print (ver $1)"`
++		if test "$ac_supports_python_ver" = "True"; then
++	   	   AC_MSG_RESULT([yes])
++		else
++			AC_MSG_RESULT([no])
++			AC_MSG_ERROR([this package requires Python $1.
++If you have it installed, but it isn't the default Python
++interpreter in your system path, please pass the PYTHON_VERSION
++variable to configure. See ``configure --help'' for reference.
++])
++			PYTHON_VERSION=""
++		fi
++	fi
++
++	#
++	# Check if you have distutils, else fail
++	#
++	AC_MSG_CHECKING([for the distutils Python package])
++	ac_distutils_result=`$PYTHON -c "import distutils" 2>&1`
++	if test -z "$ac_distutils_result"; then
++		AC_MSG_RESULT([yes])
++	else
++		AC_MSG_RESULT([no])
++		AC_MSG_ERROR([cannot import Python module "distutils".
++Please check your Python installation. The error was:
++$ac_distutils_result])
++		PYTHON_VERSION=""
++	fi
++
++	#
++	# Check for Python include path
++	#
++	AC_MSG_CHECKING([for Python include path])
++	if test -z "$PYTHON_CPPFLAGS"; then
++		python_path=`$PYTHON -c "import distutils.sysconfig; \
++           		print (distutils.sysconfig.get_python_inc ());"`
++		if test -n "${python_path}"; then
++		   	python_path="-I$python_path"
++		fi
++		PYTHON_CPPFLAGS=$python_path
++	fi
++	AC_MSG_RESULT([$PYTHON_CPPFLAGS])
++	AC_SUBST([PYTHON_CPPFLAGS])
++
++	#
++	# Check for Python library path
++	#
++	AC_MSG_CHECKING([for Python library path])
++	if test -z "$PYTHON_LDFLAGS"; then
++		# (makes two attempts to ensure we've got a version number
++		# from the interpreter)
++		ac_python_version=`cat<<EOD | $PYTHON -
++
++# join all versioning strings, on some systems
++# major/minor numbers could be in different list elements
++from distutils.sysconfig import *
++ret = ''
++for e in get_config_vars ('VERSION'):
++	if (e != None):
++		ret += e
++print (ret)
++EOD`
++
++		if test -z "$ac_python_version"; then
++			if test -n "$PYTHON_VERSION"; then
++				ac_python_version=$PYTHON_VERSION
++			else
++				ac_python_version=`$PYTHON -c "import sys; \
++					print (sys.version[[:3]])"`
++			fi
++		fi
++
++		# Make the versioning information available to the compiler
++		AC_DEFINE_UNQUOTED([HAVE_PYTHON], ["$ac_python_version"],
++                                   [If available, contains the Python version number currently in use.])
++
++		# First, the library directory:
++		ac_python_libdir=`cat<<EOD | $PYTHON -
++
++# There should be only one
++import distutils.sysconfig
++for e in distutils.sysconfig.get_config_vars ('LIBDIR'):
++	if e != None:
++		print (e)
++		break
++EOD`
++
++		# Before checking for libpythonX.Y, we need to know
++		# the extension the OS we're on uses for libraries
++		# (we take the first one, if there's more than one fix me!):
++		ac_python_soext=`$PYTHON -c \
++		  "import distutils.sysconfig; \
++		  print (distutils.sysconfig.get_config_vars('SO')[[0]])"`
++
++		# Now, for the library:
++		ac_python_soname=`$PYTHON -c \
++		  "import distutils.sysconfig; \
++		  print (distutils.sysconfig.get_config_vars('LDLIBRARY')[[0]])"`
++
++		# Strip away extension from the end to canonicalize its name:
++		ac_python_library=`echo "$ac_python_soname" | sed "s/${ac_python_soext}$//"`
++
++		# This small piece shamelessly adapted from PostgreSQL python macro;
++		# credits goes to momjian, I think. I'd like to put the right name
++		# in the credits, if someone can point me in the right direction... ?
++		#
++		if test -n "$ac_python_libdir" -a -n "$ac_python_library" \
++			-a x"$ac_python_library" != x"$ac_python_soname"
++		then
++			# use the official shared library
++			ac_python_library=`echo "$ac_python_library" | sed "s/^lib//"`
++			PYTHON_LDFLAGS="-L$ac_python_libdir -l$ac_python_library"
++		else
++			# old way: use libpython from python_configdir
++			ac_python_libdir=`$PYTHON -c \
++			  "from distutils.sysconfig import get_python_lib as f; \
++			  import os; \
++			  print (os.path.join(f(plat_specific=1, standard_lib=1), 'config'));"`
++			PYTHON_LDFLAGS="-L$ac_python_libdir -lpython$ac_python_version"
++		fi
++
++		if test -z "PYTHON_LDFLAGS"; then
++			AC_MSG_ERROR([
++  Cannot determine location of your Python DSO. Please check it was installed with
++  dynamic libraries enabled, or try setting PYTHON_LDFLAGS by hand.
++			])
++		fi
++	fi
++	AC_MSG_RESULT([$PYTHON_LDFLAGS])
++	AC_SUBST([PYTHON_LDFLAGS])
++
++	#
++	# Check for site packages
++	#
++	AC_MSG_CHECKING([for Python site-packages path])
++	if test -z "$PYTHON_SITE_PKG"; then
++		PYTHON_SITE_PKG=`$PYTHON -c "import distutils.sysconfig; \
++		        print (distutils.sysconfig.get_python_lib(0,0));"`
++	fi
++	AC_MSG_RESULT([$PYTHON_SITE_PKG])
++	AC_SUBST([PYTHON_SITE_PKG])
++
++	#
++	# libraries which must be linked in when embedding
++	#
++	AC_MSG_CHECKING(python extra libraries)
++	if test -z "$PYTHON_EXTRA_LIBS"; then
++	   PYTHON_EXTRA_LIBS=`$PYTHON -c "import distutils.sysconfig; \
++                conf = distutils.sysconfig.get_config_var; \
++                print (conf('LOCALMODLIBS') + ' ' + conf('LIBS'))"`
++	fi
++	AC_MSG_RESULT([$PYTHON_EXTRA_LIBS])
++	AC_SUBST(PYTHON_EXTRA_LIBS)
++
++	#
++	# linking flags needed when embedding
++	#
++	AC_MSG_CHECKING(python extra linking flags)
++	if test -z "$PYTHON_EXTRA_LDFLAGS"; then
++		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import distutils.sysconfig; \
++			conf = distutils.sysconfig.get_config_var; \
++			print (conf('LINKFORSHARED'))"`
++	fi
++	AC_MSG_RESULT([$PYTHON_EXTRA_LDFLAGS])
++	AC_SUBST(PYTHON_EXTRA_LDFLAGS)
++
++	#
++	# final check to see if everything compiles alright
++	#
++	AC_MSG_CHECKING([consistency of all components of python development environment])
++	# save current global flags
++	LIBS="$ac_save_LIBS $PYTHON_LDFLAGS $PYTHON_EXTRA_LDFLAGS $PYTHON_EXTRA_LIBS"
++	CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
++	AC_LANG_PUSH([C])
++	AC_LINK_IFELSE([
++		AC_LANG_PROGRAM([[#include <Python.h>]],
++				[[Py_Initialize();]])
++		],[pythonexists=yes],[pythonexists=no])
++	AC_LANG_POP([C])
++	# turn back to default flags
++	CPPFLAGS="$ac_save_CPPFLAGS"
++	LIBS="$ac_save_LIBS"
++
++	AC_MSG_RESULT([$pythonexists])
++
++        if test ! "x$pythonexists" = "xyes"; then
++	   AC_MSG_FAILURE([
++  Could not link test program to Python. Maybe the main Python library has been
++  installed in some non-standard library path. If so, pass it to configure,
++  via the LDFLAGS environment variable.
++  Example: ./configure LDFLAGS="-L/usr/non-standard-path/python/lib"
++  ============================================================================
++   ERROR!
++   You probably have to install the development version of the Python package
++   for your distribution.  The exact name of this package varies among them.
++  ============================================================================
++	   ])
++	  PYTHON_VERSION=""
++	fi
++
++	#
++	# all done!
++	#
++])
+
+Property changes on: .
+___________________________________________________________________
+Modified: svn:ignore
+   - options.h
+config.log
+config.h
+Makefile
+config.status
+
+   + autom4te.cache
+options.h
+config.log
+config.h
+Makefile
+config.status
+
+

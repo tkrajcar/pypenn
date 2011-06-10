@@ -1,0 +1,302 @@
+Index: src/pennpy.c
+===================================================================
+--- src/pennpy.c	(revision 16)
++++ src/pennpy.c	(revision 17)
+@@ -25,13 +25,34 @@
+  * Forward declarations.
+  */
+ typedef struct {
++	dbref executor;
++	dbref caller;
++	dbref enactor;
++} CU5_PennPy_Call_State;
++
++static CU5_PennPy_Call_State cu5_pennpy_call_state = { -1, -1, -1 };
++
++#define CU5_PENNPY_PUSH_CALL_STATE(state) \
++	do { \
++		state = cu5_pennpy_call_state; \
++		cu5_pennpy_call_state.executor = executor; \
++		cu5_pennpy_call_state.caller = caller; \
++		cu5_pennpy_call_state.enactor = enactor; \
++	} while (0)
++
++#define CU5_PENNPY_POP_CALL_STATE(state) \
++	do { \
++		cu5_pennpy_call_state = state; \
++	} while (0)
++
++typedef struct {
+ 	char *saver[NUMQ];
+ 	struct re_save rsave;
+ 	char *old_wenv[10];
+-} CU5_PennPy_State;
++} CU5_PennPy_Eval_State;
+ 
+-static void cu5_pennpy_push_state(CU5_PennPy_State *state);
+-static void cu5_pennpy_pop_state(CU5_PennPy_State *state);
++static void cu5_pennpy_push_eval_state(CU5_PennPy_Eval_State *state);
++static void cu5_pennpy_pop_eval_state(CU5_PennPy_Eval_State *state);
+ static void cu5_pennpy_init_pe_info(PE_Info *pe_info);
+ 
+ static PyObject *cu5_pennpy_resolve(char *dotted_name);
+@@ -249,6 +270,25 @@
+ 	Py_RETURN_NONE;
+ }
+ 
++PennPy_METHOD(cu5_pennpy_meth_call_info)
++{
++	if (PyTuple_GET_SIZE(args) != 0) {
++		/* call_info(...) arguments reserved for future use. */
++		PyErr_SetString(PyExc_NotImplementedError, "Reserved");
++		return NULL;
++	}
++
++	if (cu5_pennpy_call_state.executor == -1) {
++		/* Not inside of a call. */
++		Py_RETURN_NONE;
++	}
++
++	return Py_BuildValue("iii",
++	                     cu5_pennpy_call_state.executor,
++	                     cu5_pennpy_call_state.caller,
++	                     cu5_pennpy_call_state.enactor);
++}
++
+ PennPy_METHOD(cu5_pennpy_meth_eval_attr)
+ {
+ 	dbref id;
+@@ -344,10 +384,10 @@
+ 	int farglens[10];
+ 
+ 	FUN *fp;
+-	PE_Info fake_pe_info;
++	PE_Info pe_info;
+ 	char called_as[BUFFER_LEN];
+ 
+-	CU5_PennPy_State old_state;
++	CU5_PennPy_Eval_State old_state;
+ 
+ 	/* Get arguments. */
+ 	if (PyTuple_GET_SIZE(args) < 1) {
+@@ -398,7 +438,7 @@
+ 	}
+ 
+ 	/* Call function. */
+-	cu5_pennpy_push_state(&old_state);
++	cu5_pennpy_push_eval_state(&old_state);
+ 
+ 	for (ii = 0; ii < fargc; ii++) {
+ 		char *const farg = &fargs_buf[ii * BUFFER_LEN];
+@@ -411,14 +451,13 @@
+ 		farglens[ii] = 0;
+ 	}
+ 
+-	/* FIXME: Use caller's pe_info to track hitting invocation limits. */
+-	cu5_pennpy_init_pe_info(&fake_pe_info);
++	cu5_pennpy_init_pe_info(&pe_info);
+ 
+ 	rp = rbuff;
+ 	fp->where.fun(fp, rbuff, &rp, fargc, fargs, farglens, GOD, GOD, GOD,
+-	              called_as, &fake_pe_info);
++	              called_as, &pe_info);
+ 
+-	cu5_pennpy_pop_state(&old_state);
++	cu5_pennpy_pop_eval_state(&old_state);
+ 
+ 	return PyString_FromStringAndSize(rbuff, rp - rbuff);
+ }
+@@ -461,6 +500,15 @@
+ 	},
+ 
+ 	{
++		"call_info", cu5_pennpy_meth_call_info, METH_VARARGS,
++		"call_info()\n"
++		"Returns (executor, caller, enactor) (may be extended with "
++		"additional values later), or None if the Python interpreter "
++		"wasn't entered from an evaluation context (such as from the "
++		"periodic timer hook."
++	},
++
++	{
+ 		"eval_attr", cu5_pennpy_meth_eval_attr, METH_VARARGS,
+ 		"eval_attr(dbref, name, ...)\n"
+ 		"Evaluate attribute with the given arguments."
+@@ -491,6 +539,7 @@
+ 		return 0;
+ 	}
+ 
++	/* Key constants for call context access. */
+ 	if (PyModule_AddIntConstant(mod_obj, "_DB_KEY_NAME", 0) != 0) {
+ 		return 0;
+ 	}
+@@ -618,6 +667,8 @@
+ {
+ 	PyObject *result, *call_obj, *args_obj;
+ 
++	CU5_PennPy_Call_State old_state;
++
+ 	assert(nargs > 0);
+ 
+ 	/* Check for PyCall permission. */
+@@ -654,7 +705,12 @@
+ 	}
+ 
+ 	/* Call function with arguments. */
++	CU5_PENNPY_PUSH_CALL_STATE(old_state);
++
+ 	result = PyObject_CallObject(call_obj, args_obj);
++
++	CU5_PENNPY_POP_CALL_STATE(old_state);
++
+ 	Py_DECREF(args_obj);
+ 	Py_DECREF(call_obj);
+ 
+@@ -676,6 +732,8 @@
+ {
+ 	PyObject *result;
+ 
++	CU5_PennPy_Call_State old_state;
++
+ 	assert(nargs == 1);
+ 
+ 	/* Check for PyEval permission. */
+@@ -691,8 +749,13 @@
+ 	}
+ 
+ 	/* Evalute string. */
++	CU5_PENNPY_PUSH_CALL_STATE(old_state);
++
+ 	result = PyRun_String(args[0], Py_eval_input,
+ 	                      cu5_pennpy_main_dict, cu5_pennpy_main_dict);
++
++	CU5_PENNPY_POP_CALL_STATE(old_state);
++
+ 	if (!result) {
+ 		/* Evaluation threw exception. */
+ 		cu5_pennpy_exception(buff, bp);
+@@ -711,6 +774,8 @@
+ {
+ 	PyObject *result;
+ 
++	CU5_PennPy_Call_State old_state;
++
+ 	assert(nargs == 1);
+ 
+ 	/* Check for PyEval permission. */
+@@ -726,8 +791,13 @@
+ 	}
+ 
+ 	/* Evalute string. */
++	CU5_PENNPY_PUSH_CALL_STATE(old_state);
++
+ 	result = PyRun_String(args[0], Py_file_input,
+ 	                      cu5_pennpy_main_dict, cu5_pennpy_main_dict);
++
++	CU5_PENNPY_POP_CALL_STATE(old_state);
++
+ 	if (!result) {
+ 		/* Evaluation threw exception. */
+ 		cu5_pennpy_exception(buff, bp);
+@@ -777,7 +847,7 @@
+ }
+ 
+ static void
+-cu5_pennpy_push_state(CU5_PennPy_State *state)
++cu5_pennpy_push_eval_state(CU5_PennPy_Eval_State *state)
+ {
+ 	int ii;
+ 
+@@ -802,7 +872,7 @@
+ }
+ 
+ static void
+-cu5_pennpy_pop_state(CU5_PennPy_State *state)
++cu5_pennpy_pop_eval_state(CU5_PennPy_Eval_State *state)
+ {
+ 	int ii;
+ 
+@@ -820,11 +890,11 @@
+ {
+ 	char rbuff[BUFFER_LEN], *rp;
+ 
+-	CU5_PennPy_State old_state;
++	CU5_PennPy_Eval_State old_state;
+ 	int ii, pe_ret;
+ 
+ 	/* Evaluate string. */
+-	cu5_pennpy_push_state(&old_state);
++	cu5_pennpy_push_eval_state(&old_state);
+ 
+ 	for (ii = 0; ii < wenv_argc; ii++) {
+ 		global_eval_context.wenv[ii] = &wenv_buf[ii * BUFFER_LEN];
+@@ -834,7 +904,7 @@
+ 	pe_ret = process_expression(rbuff, &rp, &to_eval, id, id, GOD,
+ 	                            PE_DEFAULT, PT_DEFAULT, NULL);
+ 
+-	cu5_pennpy_pop_state(&old_state);
++	cu5_pennpy_pop_eval_state(&old_state);
+ 
+ 	/* Return in Python string. */
+ 	if (pe_ret) {
+Index: game/python/__pennmush__.py
+===================================================================
+--- game/python/__pennmush__.py	(revision 16)
++++ game/python/__pennmush__.py	(revision 17)
+@@ -3,6 +3,10 @@
+ # Emulate DB keys.
+ _DB_KEY_NAME = 0
+ 
++# Emulate call_info.
++def call_info():
++	return None
++
+ # Emulate notify.
+ def notify(target, message):
+ 	for dbref in target:
+Index: game/python/pennmush.py
+===================================================================
+--- game/python/pennmush.py	(revision 16)
++++ game/python/pennmush.py	(revision 17)
+@@ -5,7 +5,7 @@
+ 
+ # DBref.
+ class dbref(object):
+-	__slots__ = ('__int', '__str')
++	__slots__ = ('__weakref__', '__int', '__str')
+ 	__interned = weakref.WeakValueDictionary()
+ 	
+ 	def __new__(cls, value):
+@@ -33,6 +33,17 @@
+ 	def __nonzero__(self):
+ 		return self.__int >= 0
+ 
++# Call context.
++class CallContext(object):
++	__slots__ = ('executor', 'caller', 'enactor')
++	
++	def __init__(self):
++		ctx = call_info()
++		if not ctx:
++			raise ValueError('Not in a call context')
++		
++		(self.executor, self.caller, self.enactor) = map(dbref, ctx[:3])
++
+ # Pythonic interface to PennMUSH soft code API.
+ class _PennSoftAPI(object):
+ 	__slots__ = ()
+Index: game/python/main.py
+===================================================================
+--- game/python/main.py	(revision 16)
++++ game/python/main.py	(revision 17)
+@@ -39,6 +39,10 @@
+ 	int_list = [int(pennmush.dbref(dbref)) for dbref in target.split()]
+ 	pennmush.notify(int_list, message)
+ 
++def test_call_info():
++	ctx = pennmush.CallContext()
++	return '{0} {1} {2}'.format(ctx.executor, ctx.caller, ctx.enactor)
++
+ import hidden
+ 
+ #

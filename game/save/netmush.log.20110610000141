@@ -1,0 +1,78 @@
+[07/01 15:09:40] 1.8.3
+[07/01 15:09:40] MUSH restarted, PID 10596, at Wed Jul 01 15:09:40 2009
+[07/01 15:09:40] ANALYZING: data/indb
+[07/01 15:09:40] ANALYZING: data/indb (done)
+[07/01 15:09:40] LOADING: data/indb
+[07/01 15:09:40] Loading database saved on Wed Jul 01 13:26:24 2009 UTC
+[07/01 15:09:40] READING: done
+[07/01 15:09:40] LOADING: data/indb (done)
+[07/01 15:09:40] LOADING: data/maildb
+[07/01 15:09:40] LOADING: data/maildb (done)
+[07/01 15:09:40] LOADING: data/chatdb
+[07/01 15:09:40] LOADING: data/chatdb (done)
+[07/01 15:09:40] Access file access.cnf not found.
+[07/01 15:09:40] Reading /home/e/kilrathi/game/mush.cnf
+[07/01 15:09:40] Reading alias.cnf
+[07/01 15:09:40] Reading restrict.cnf
+[07/01 15:09:40] CONFIG: directive 'exit_flags' missing from cnf file, using default value.
+[07/01 15:09:41] PennPy: Initializing
+_DB_KEY_NAME = 0
+[07/01 15:09:41] Seeding OpenSSL random number pool.
+[07/01 15:09:41] Seeded after 1 cycle.
+Unable to load server certificate - only anonymous ciphers supported.
+10596:error:02001002:system library:fopen:No such file or directory:bss_file.c:352:fopen('server-key.crt','r')
+10596:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:354:
+10596:error:140DC002:SSL routines:SSL_CTX_use_certificate_chain_file:system lib:ssl_rsa.c:720:
+Unable to load private key - only anonymous ciphers supported.
+10596:error:02001002:system library:fopen:No such file or directory:bss_file.c:352:fopen('server-key.crt','r')
+10596:error:20074002:BIO routines:FILE_CTRL:system lib:bss_file.c:354:
+10596:error:140B0002:SSL routines:SSL_CTX_use_PrivateKey_file:system lib:ssl_rsa.c:648:
+Unable to load CA certificates
+10596:error:02001002:system library:fopen:No such file or directory:bss_file.c:122:fopen('/usr/share/ssl/certs/ca-bundle.crt','r')
+10596:error:2006D080:BIO routines:BIO_new_file:no such file:bss_file.c:125:
+10596:error:0B084002:x509 certificate routines:X509_load_cert_crl_file:system lib:by_file.c:274:
+[07/01 15:09:41] Spawning info slave, communicating using socketpair, pid 10597
+[07/01 15:09:41] Unable to open reboot.db in mode 'r': No such file or directory
+Listening on port 8888 using IPv4.
+[07/01 15:09:41] 1018 file descriptors available.
+[07/01 15:09:41] RESTART FINISHED.
+info_slave: trying poll event loop... ok. Using poll.
+periodic() says: The current time is Wed Jul  1 15:09:42 2009
+[07/01 15:09:42] PennPy: Timer hook threw exception
+Traceback (most recent call last):
+  File "python/main.py", line 57, in periodic
+    raise AssertionError("I've been bad")
+AssertionError: I've been bad
+[07/10 14:58:02] PennPy: Python exception:
+Traceback (most recent call last):
+  File "python/main.py", line 97, in honor_log_view
+    honor.log_view(victim)
+  File "python/honor.py", line 30, in log_view
+    cursor.execute("SELECT delta, balance, description, dt FROM honor_log WHERE victim = " + str(victim) + " ORDER BY dt desc LIMIT 20")
+  File "/usr/lib/pymodules/python2.5/MySQLdb/cursors.py", line 166, in execute
+    self.errorhandler(self, exc, value)
+  File "/usr/lib/pymodules/python2.5/MySQLdb/connections.py", line 35, in defaulterrorhandler
+    raise errorclass, errorvalue
+_mysql_exceptions.OperationalError: (2006, 'MySQL server has gone away')
+[07/13 09:54:43] PennPy: Python exception:
+Traceback (most recent call last):
+  File "python/main.py", line 94, in honor_pts
+    return honor.pts(victim)
+  File "python/honor.py", line 17, in pts
+    cursor.execute("SELECT balance FROM honor_log WHERE victim = " + str(victim) + " ORDER BY dt desc LIMIT 1")
+  File "/usr/lib/pymodules/python2.5/MySQLdb/cursors.py", line 166, in execute
+    self.errorhandler(self, exc, value)
+  File "/usr/lib/pymodules/python2.5/MySQLdb/connections.py", line 35, in defaulterrorhandler
+    raise errorclass, errorvalue
+_mysql_exceptions.OperationalError: (2006, 'MySQL server has gone away')
+[07/13 09:54:56] PennPy: Python exception:
+Traceback (most recent call last):
+  File "python/main.py", line 97, in honor_log_view
+    honor.log_view(victim)
+  File "python/honor.py", line 30, in log_view
+    cursor.execute("SELECT delta, balance, description, dt FROM honor_log WHERE victim = " + str(victim) + " ORDER BY dt desc LIMIT 20")
+  File "/usr/lib/pymodules/python2.5/MySQLdb/cursors.py", line 166, in execute
+    self.errorhandler(self, exc, value)
+  File "/usr/lib/pymodules/python2.5/MySQLdb/connections.py", line 35, in defaulterrorhandler
+    raise errorclass, errorvalue
+_mysql_exceptions.OperationalError: (2006, 'MySQL server has gone away')

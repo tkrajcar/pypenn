@@ -1,0 +1,74 @@
+Index: src/pennpy.c
+===================================================================
+--- src/pennpy.c	(revision 13)
++++ src/pennpy.c	(revision 15)
+@@ -368,6 +368,23 @@
+ 	{ NULL, NULL, 0, NULL }
+ };
+ 
++static int
++cu5_pennpy_initialize_module(void)
++{
++	PyObject *mod_obj;
++
++	/* Export hooks as __pennmush__ module. */
++	if (!(mod_obj = Py_InitModule("__pennmush__", cu5_pennpy_module))) {
++		return 0;
++	}
++
++	if (PyModule_AddIntConstant(mod_obj, "_DB_KEY_NAME", 0) != 0) {
++		return 0;
++	}
++
++	return 1;
++}
++
+ /*
+  * PennMUSH to Python.
+  */
+@@ -461,7 +478,7 @@
+ 
+ 	if (value == Py_None) {
+ 		/* No value. */
+-		return 0;
++		return 1;
+ 	}
+ 
+ 	/* Coerce value to string. */
+@@ -871,9 +888,9 @@
+ 
+ 	cu5_pennpy_main_dict = PyModule_GetDict(cu5_pennpy_main);
+ 
+-	/* Export hooks as __pennmush__ module. */
+-	if (!Py_InitModule("__pennmush__", cu5_pennpy_module)) {
+-		/* Can't initialize __pennmush__ module. */
++	/* Initialize __pennmush__ internal module. */
++	if (!cu5_pennpy_initialize_module()) {
++		/* Can't initialize module. */
+ 		mush_panic(T("PennPy: Can't initialize __pennmush__ module"));
+ 	}
+ 
+Index: game/python/__pennmush__.py
+===================================================================
+--- game/python/__pennmush__.py	(revision 13)
++++ game/python/__pennmush__.py	(revision 15)
+@@ -1,5 +1,8 @@
+ # Stub moddule for testing PennPy code without PennMUSH.
+ 
++# Emulate DB keys.
++_DB_KEY_NAME = 0
++
+ # Emulate notify.
+ def notify(target, message):
+ 	for dbref in target:
+Index: game/python/main.py
+===================================================================
+--- game/python/main.py	(revision 13)
++++ game/python/main.py	(revision 15)
+@@ -53,3 +53,6 @@
+ 	raise AssertionError("I've been bad")
+ 
+ pennmush.set_timer(periodic)
++
++import __pennmush__
++print '_DB_KEY_NAME =', __pennmush__._DB_KEY_NAME

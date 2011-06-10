@@ -1,0 +1,10 @@
+New text files, and a backup script.
+
+--This line, and those below, will be ignored--
+
+_M   game
+M    game/txt/quit.txt
+M    game/txt/connect.txt
+M    game/netmush.pid
+_M   game/data
+A    backup.sh

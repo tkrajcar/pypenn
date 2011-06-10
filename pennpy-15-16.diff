@@ -1,0 +1,426 @@
+Index: src/pennpy.c
+===================================================================
+--- src/pennpy.c	(revision 15)
++++ src/pennpy.c	(revision 16)
+@@ -12,6 +12,7 @@
+ #include "function.h"
+ #include "log.h"
+ #include "attrib.h"
++#include "case.h"
+ 
+ #include "pennpy.h"
+ 
+@@ -23,6 +24,16 @@
+ /*
+  * Forward declarations.
+  */
++typedef struct {
++	char *saver[NUMQ];
++	struct re_save rsave;
++	char *old_wenv[10];
++} CU5_PennPy_State;
++
++static void cu5_pennpy_push_state(CU5_PennPy_State *state);
++static void cu5_pennpy_pop_state(CU5_PennPy_State *state);
++static void cu5_pennpy_init_pe_info(PE_Info *pe_info);
++
+ static PyObject *cu5_pennpy_resolve(char *dotted_name);
+ static int cu5_pennpy_bless_module(PyObject *module_obj);
+ static int cu5_pennpy_set_timer(PyObject *hook_obj);
+@@ -316,6 +327,102 @@
+ 	return cu5_pennpy_eval_str(GOD, to_eval, wenv_buf, wenv_argc);
+ }
+ 
++PennPy_METHOD(cu5_pennpy_meth_penn_call)
++{
++	const char *name;
++	char rbuff[BUFFER_LEN], *rp;
++
++	char fargs_buf[10 * BUFFER_LEN];
++	int ii, fargc;
++
++#if 0
++	char *wenv_buf2;
++	char **wenv_args;
++#endif /* FIXME: for >10 argument support */
++
++	char *fargs[10];
++	int farglens[10];
++
++	FUN *fp;
++	PE_Info fake_pe_info;
++	char called_as[BUFFER_LEN];
++
++	CU5_PennPy_State old_state;
++
++	/* Get arguments. */
++	if (PyTuple_GET_SIZE(args) < 1) {
++		PyErr_SetString(PyExc_TypeError, "Takes 1 or more arguments");
++		return NULL;
++	}
++
++	if (!(name = PyString_AsString(PyTuple_GET_ITEM(args, 0)))) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	if (!cu5_pennpy_get_eval_args(args, 1, fargs_buf, &fargc)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	/*
++	 * FIXME: Store additional arguments (if any) in heap memory.  This
++	 * keeps the common case of less than 10 arguments faster.
++	 */
++
++	/*
++	 * Find function.  Only built-in functions supported; if you want to
++	 * execute user functions, there are better ways (eval_str, eval_attr).
++	 */
++	for (ii = 0; name[ii] != '\0' && ii < BUFFER_LEN - 1; ii++) {
++		called_as[ii] = UPCASE(name[ii]);
++	}
++	called_as[ii] = '\0';
++
++	if (!(fp = builtin_func_hash_lookup(called_as))) {
++		/* No such function. */
++		PyErr_SetString(PyExc_ValueError, "No such function");
++		return NULL;
++	}
++
++	if (!check_func(GOD, fp)) {
++		/* Can't execute function. */
++		PyErr_SetString(PyExc_ValueError, "Can't execute function");
++		return NULL;
++	}
++
++	if (fargc < fp->minargs || fargc > abs(fp->maxargs)) {
++		/* Argument list mismatch. */
++		PyErr_SetString(PyExc_TypeError, "Wrong number of arguments");
++		return NULL;
++	}
++
++	/* Call function. */
++	cu5_pennpy_push_state(&old_state);
++
++	for (ii = 0; ii < fargc; ii++) {
++		char *const farg = &fargs_buf[ii * BUFFER_LEN];
++
++		fargs[ii] = farg;
++		farglens[ii] = strlen(farg);
++	}
++	for (; ii < 10; ii++) {
++		fargs[ii] = NULL;
++		farglens[ii] = 0;
++	}
++
++	/* FIXME: Use caller's pe_info to track hitting invocation limits. */
++	cu5_pennpy_init_pe_info(&fake_pe_info);
++
++	rp = rbuff;
++	fp->where.fun(fp, rbuff, &rp, fargc, fargs, farglens, GOD, GOD, GOD,
++	              called_as, &fake_pe_info);
++
++	cu5_pennpy_pop_state(&old_state);
++
++	return PyString_FromStringAndSize(rbuff, rp - rbuff);
++}
++
+ static PyMethodDef cu5_pennpy_module[] = {
+ 	{
+ 		"bless", cu5_pennpy_meth_bless, METH_VARARGS,
+@@ -365,6 +472,12 @@
+ 		"Evaluate string with the given arguments."
+ 	},
+ 
++	{
++		"penn_call", cu5_pennpy_meth_penn_call, METH_VARARGS,
++		"penn_call(penn_func, ...)\n"
++		"Call PennMUSH function penn_func with the given arguments."
++	},
++
+ 	{ NULL, NULL, 0, NULL }
+ };
+ 
+@@ -634,7 +747,7 @@
+ }
+ 
+ /*
+- * Soft code expression evaluation.  Modeled after utils.c:call_attrib().
++ * Soft code interface.
+  */
+ 
+ static int
+@@ -663,19 +776,14 @@
+ 	return 1;
+ }
+ 
+-static PyObject *
+-cu5_pennpy_eval_str(int id, const char *to_eval, char *wenv_buf, int wenv_argc)
++static void
++cu5_pennpy_push_state(CU5_PennPy_State *state)
+ {
+-	char rbuff[BUFFER_LEN], *rp;
++	int ii;
+ 
+-	char *old_wenv[10];
+-	int ii, pe_ret;
+-	char *saver[NUMQ];
+-	struct re_save rsave;
+-
+ 	/* Save state. */
+-	save_global_regs("localize", saver);
+-	save_regexp_context(&rsave);
++	save_global_regs("localize", state->saver);
++	save_regexp_context(&state->rsave);
+ 
+ 	/* Replace state. */
+ 	for (ii = 0; ii < NUMQ; ii++) {
+@@ -687,28 +795,47 @@
+ 	global_eval_context.re_offsets = NULL;
+ 	global_eval_context.re_from = NULL;
+ 
++	for (ii = 0; ii < 10; ii++) {
++		state->old_wenv[ii] = global_eval_context.wenv[ii];
++		global_eval_context.wenv[ii] = NULL;
++	}
++}
++
++static void
++cu5_pennpy_pop_state(CU5_PennPy_State *state)
++{
++	int ii;
++
++	/* Restore state. */
++	for (ii = 0; ii < 10; ii++) {
++		global_eval_context.wenv[ii] = state->old_wenv[ii];
++	}
++
++	restore_regexp_context(&state->rsave);
++	restore_global_regs("localize", state->saver);
++}
++
++static PyObject *
++cu5_pennpy_eval_str(int id, const char *to_eval, char *wenv_buf, int wenv_argc)
++{
++	char rbuff[BUFFER_LEN], *rp;
++
++	CU5_PennPy_State old_state;
++	int ii, pe_ret;
++
++	/* Evaluate string. */
++	cu5_pennpy_push_state(&old_state);
++
+ 	for (ii = 0; ii < wenv_argc; ii++) {
+-		old_wenv[ii] = global_eval_context.wenv[ii];
+ 		global_eval_context.wenv[ii] = &wenv_buf[ii * BUFFER_LEN];
+ 	}
+-	for (; ii < 10; ii++) {
+-		old_wenv[ii] = global_eval_context.wenv[ii];
+-		global_eval_context.wenv[ii] = NULL;
+-	}
+ 
+-	/* Make the call. */
+ 	rp = rbuff;
+ 	pe_ret = process_expression(rbuff, &rp, &to_eval, id, id, GOD,
+ 	                            PE_DEFAULT, PT_DEFAULT, NULL);
+ 
+-	/* Restore state. */
+-	for (ii = 0; ii < 10; ii++) {
+-		global_eval_context.wenv[ii] = old_wenv[ii];
+-	}
++	cu5_pennpy_pop_state(&old_state);
+ 
+-	restore_regexp_context(&rsave);
+-	restore_global_regs("localize", saver);
+-
+ 	/* Return in Python string. */
+ 	if (pe_ret) {
+ 		PyErr_SetString(PyExc_RuntimeError, "CPU limit reached");
+@@ -719,6 +846,21 @@
+ }
+ 
+ /*
++ * This type is supposed to be opaque, but funlist.c functions poke around in
++ * it, so we need to create it ourselves if we don't have one already.
++ */
++static void
++cu5_pennpy_init_pe_info(PE_Info *pe_info)
++{
++	pe_info->fun_invocations = 0;
++	pe_info->fun_depth = 0;
++	pe_info->nest_depth = 0;
++	pe_info->call_depth = 0;
++	pe_info->debug_strings = NULL;
++	pe_info->arg_count = 0;
++}
++
++/*
+  * Timer stuff.
+  */
+ 
+@@ -840,26 +982,34 @@
+ static int
+ cu5_pennpy_bless_module(PyObject *module_obj)
+ {
+-	CU5_PennPy_Module *new_blessed;
++	CU5_PennPy_Module *blessed;
+ 
++	/* Check for existing blessing. */
++	for (blessed = cu5_pennpy_blessed; blessed; blessed = blessed->next) {
++		if (blessed->module_obj == module_obj) {
++			/* Already blessed. */
++			return 1;
++		}
++	}
++
+ 	/* Create new blessing item. */
+-	new_blessed = (CU5_PennPy_Module *)malloc(sizeof(CU5_PennPy_Module));
+-	if (!new_blessed) {
++	blessed = (CU5_PennPy_Module *)malloc(sizeof(CU5_PennPy_Module));
++	if (!blessed) {
+ 		PyErr_NoMemory();
+ 		return 0;
+ 	}
+ 
+-	new_blessed->next = NULL;
++	blessed->next = NULL;
+ 
+ 	Py_INCREF(module_obj);
+-	new_blessed->module_obj = module_obj;
++	blessed->module_obj = module_obj;
+ 
+ 	/*
+ 	 * Add blessing to the end of the list.  This implies that you'll want
+ 	 * to put more important modules first, so they get checked quicker.
+ 	 */
+-	*cu5_pennpy_blessed_last = new_blessed;
+-	cu5_pennpy_blessed_last = &new_blessed->next;
++	*cu5_pennpy_blessed_last = blessed;
++	cu5_pennpy_blessed_last = &blessed->next;
+ 
+ 	return 1;
+ }
+Index: game/python/__pennmush__.py
+===================================================================
+--- game/python/__pennmush__.py	(revision 15)
++++ game/python/__pennmush__.py	(revision 16)
+@@ -40,3 +40,7 @@
+ # Timer hook stub.
+ def set_timer(hook):
+ 	pass
++
++# Emulate soft code API access.
++def penn_call(name, *args):
++	return '#-1'
+Index: game/python/pennmush.py
+===================================================================
+--- game/python/pennmush.py	(revision 15)
++++ game/python/pennmush.py	(revision 16)
+@@ -1,12 +1,47 @@
++import weakref
++
+ # Import everything from the internal __pennmush__ module.
+ from __pennmush__ import *
+ 
+-# Some useful utility routines.
+-def parse_dbref(dbref):
+-	if dbref[0] is not '#':
+-		raise ValueError('Not a dbref')
+-	return int(dbref[1:])
++# DBref.
++class dbref(object):
++	__slots__ = ('__int', '__str')
++	__interned = weakref.WeakValueDictionary()
++	
++	def __new__(cls, value):
++		if isinstance(value, basestring):
++			if value[0] is not '#':
++				raise ValueError('Not a dbref string')
++			value = value[1:]
++		
++		int_value = int(value)
++		obj = cls.__interned.get(int_value, None)
++		if obj is None:
++			obj = object.__new__(cls)
++			cls.__interned[int_value] = obj
++		
++		obj.__int = int_value
++		obj.__str = '#' + str(int_value)
++		return obj
++	
++	def __int__(self):
++		return self.__int
++	
++	def __str__(self):
++		return self.__str
++	
++	def __nonzero__(self):
++		return self.__int >= 0
+ 
++# Pythonic interface to PennMUSH soft code API.
++class _PennSoftAPI(object):
++	__slots__ = ()
++	
++	def __getattr__(self, name):
++		return lambda *args: penn_call(name, *args)
++
++api = _PennSoftAPI()
++
+ # Pythonic interface to PennMUSH objects.  Be careful about how we define the
+ # proxy classes, since the underlying DB object can be deleted and recreated
+ # whenever PennMUSH has control.  It's only really good transiently (within a
+@@ -14,10 +49,10 @@
+ class _PennDBProxy(object):
+ 	__slots__ = ()
+ 	
+-	def __getitem__(self, key):
+-		if not valid_dbref(key):
++	def __getitem__(self, dbref):
++		if not valid_dbref(int(dbref)):
+ 			raise KeyError('No such dbref')
+-		return _PennObjectProxy(key)
++		return _PennObjectProxy(dbref)
+ 
+ class _PennObjectProxy(object):
+ 	__slots__ = ('dbref', 'attrs')
+@@ -27,20 +62,20 @@
+ 		self.attrs = _PennAttributeProxy(dbref)
+ 
+ class _PennAttributeProxy(object):
+-	__slots__ = ('dbref')
++	__slots__ = ('__dbref')
+ 	
+ 	def __init__(self, dbref):
+-		self.dbref = dbref
++		self.__dbref = int(dbref)
+ 	
+ 	def __getitem__(self, name):
+-		return get_attr(self.dbref, name)
++		return get_attr(self.__dbref, name)
+ 	
+ 	def __setitem__(self, name, value):
+ 		if value is not None:
+ 			value = str(value)
+-		set_attr(self.dbref, name, value)
++		set_attr(self.__dbref, name, value)
+ 	
+ 	def __delitem__(self, name):
+-		set_attr(self.dbref, name, None)
++		set_attr(self.__dbref, name, None)
+ 
+ db = _PennDBProxy()
+Index: game/python/main.py
+===================================================================
+--- game/python/main.py	(revision 15)
++++ game/python/main.py	(revision 16)
+@@ -36,7 +36,7 @@
+ 
+ def test_notify(target, message):
+ 	# FIXME: This isn't how you detect dbrefs for real.
+-	int_list = [pennmush.parse_dbref(dbref) for dbref in target.split()]
++	int_list = [int(pennmush.dbref(dbref)) for dbref in target.split()]
+ 	pennmush.notify(int_list, message)
+ 
+ import hidden

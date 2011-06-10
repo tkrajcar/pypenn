@@ -1,0 +1,458 @@
+Index: src/Makefile.in
+===================================================================
+--- src/Makefile.in	(revision 11)
++++ src/Makefile.in	(revision 13)
+@@ -190,8 +190,9 @@
+ compress.o: comp_h.c comp_w.c comp_w8.c
+ 
+ # PennPy dependencies. --CU5
+-# Cheat a bit by recompiling whenever we recompile flaglocal.o/funlocal.o.
+-pennpy.o: flaglocal.o funlocal.o ../hdrs/pennpy.h ../hdrs/log.h
++# Cheat a bit by recompiling whenever we recompile flaglocal.o, funlocal.o, or
++# attrib.o.
++pennpy.o: flaglocal.o funlocal.o attrib.o ../hdrs/pennpy.h ../hdrs/log.h
+ bsd.o flags.o function.o game.o timer.o: ../hdrs/pennpy.h
+ 
+ # DO NOT DELETE THIS LINE -- make depend depends on it.
+Index: src/pennpy.c
+===================================================================
+--- src/pennpy.c	(revision 11)
++++ src/pennpy.c	(revision 13)
+@@ -11,6 +11,7 @@
+ #include "parse.h"
+ #include "function.h"
+ #include "log.h"
++#include "attrib.h"
+ 
+ #include "pennpy.h"
+ 
+@@ -25,6 +26,10 @@
+ static PyObject *cu5_pennpy_resolve(char *dotted_name);
+ static int cu5_pennpy_bless_module(PyObject *module_obj);
+ static int cu5_pennpy_set_timer(PyObject *hook_obj);
++static int cu5_pennpy_get_eval_args(PyObject *args, int start_idx,
++                                    char *wenv_buf, int *wenv_argc);
++static PyObject *cu5_pennpy_eval_str(int id, const char *to_eval,
++                                     char *wenv_buf, int wenv_argc);
+ 
+ /*
+  * Python to PennMUSH.
+@@ -144,6 +149,173 @@
+ 	Py_RETURN_NONE;
+ }
+ 
++PennPy_METHOD(cu5_pennpy_meth_valid_dbref)
++{
++	dbref id;
++
++	/* Get arguments. */
++	if (!PyArg_ParseTuple(args, "i", &id)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	/* Test dbref. */
++	if (GoodObject(id) && !IsGarbage(id)) {
++		Py_RETURN_TRUE;
++	} else {
++		Py_RETURN_FALSE;
++	}
++}
++
++PennPy_METHOD(cu5_pennpy_meth_get_attr)
++{
++	dbref id;
++	const char *name;
++
++	ATTR *attr;
++
++	/* Get arguments. */
++	if (!PyArg_ParseTuple(args, "is", &id, &name)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	if (!GoodObject(id) || IsGarbage(id)) {
++		/* Bad dbref. */
++		PyErr_SetString(PyExc_ValueError, "No such dbref");
++		return NULL;
++	}
++
++	/* Get attribute. */
++	name = strupper(name);
++
++	if (!(attr = atr_get(id, name))) {
++		/* Attribute doesn't exist. */
++		Py_RETURN_NONE;
++	}
++
++	/* Return in Python string. */
++	return PyString_FromString(atr_value(attr));
++}
++
++PennPy_METHOD(cu5_pennpy_meth_set_attr)
++{
++	dbref id;
++	const char *name;
++	const char *value;
++
++	/* Get arguments. */
++	if (!PyArg_ParseTuple(args, "isz", &id, &name, &value)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	if (!GoodObject(id) || IsGarbage(id)) {
++		/* Bad dbref. */
++		PyErr_SetString(PyExc_ValueError, "No such dbref");
++		return NULL;
++	}
++
++	/* Set attribute. */
++	name = strupper(name);
++
++	if (value == NULL) {
++		/* Clear attribute. */
++		if (atr_clr(id, name, GOD) != AE_OKAY) {
++			/* Couldn't clear attribute. */
++			PyErr_SetString(PyExc_RuntimeError, "Can't clear");
++			return NULL;
++		}
++	} else {
++		/* Set (possibly creating) attribute to value. */
++		if (atr_add(id, name, value, GOD, 0) != AE_OKAY) {
++			/* Couldn't set attribute. */
++			PyErr_SetString(PyExc_RuntimeError, "Can't set");
++			return NULL;
++		}
++	}
++
++	Py_RETURN_NONE;
++}
++
++PennPy_METHOD(cu5_pennpy_meth_eval_attr)
++{
++	dbref id;
++	const char *name;
++
++	char wenv_buf[10 * BUFFER_LEN];
++	int wenv_argc;
++
++	ATTR *attr;
++	char atrbuf[BUFFER_LEN];
++
++	/* Get arguments. */
++	if (PyTuple_GET_SIZE(args) < 2) {
++		PyErr_SetString(PyExc_TypeError, "Takes 2 or more arguments");
++		return NULL;
++	}
++
++	if ((id = PyInt_AsLong(PyTuple_GET_ITEM(args, 0))) == -1
++	    && PyErr_Occurred()) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	if (!(name = PyString_AsString(PyTuple_GET_ITEM(args, 1)))) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	if (!GoodObject(id) || IsGarbage(id)) {
++		/* Bad dbref. */
++		PyErr_SetString(PyExc_ValueError, "No such dbref");
++		return NULL;
++	}
++
++	if (!cu5_pennpy_get_eval_args(args, 2, wenv_buf, &wenv_argc)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	/* Get attribute. */
++	if (!(attr = atr_get(id, name))) {
++		PyErr_SetString(PyExc_ValueError, "No such attribute");
++		return NULL;
++	}
++
++	mush_strncpy(atrbuf, atr_value(attr), BUFFER_LEN);
++
++	/* Evaluate. */
++	return cu5_pennpy_eval_str(id, atrbuf, wenv_buf, wenv_argc);
++}
++
++PennPy_METHOD(cu5_pennpy_meth_eval_str)
++{
++	const char *to_eval;
++
++	char wenv_buf[10 * BUFFER_LEN];
++	int wenv_argc;
++
++	/* Get arguments. */
++	if (PyTuple_GET_SIZE(args) < 1) {
++		PyErr_SetString(PyExc_TypeError, "Takes 1 or more arguments");
++		return NULL;
++	}
++
++	if (!(to_eval = PyString_AsString(PyTuple_GET_ITEM(args, 0)))) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	if (!cu5_pennpy_get_eval_args(args, 1, wenv_buf, &wenv_argc)) {
++		/* Threw an exception. */
++		return NULL;
++	}
++
++	/* Evaluate. */
++	return cu5_pennpy_eval_str(GOD, to_eval, wenv_buf, wenv_argc);
++}
++
+ static PyMethodDef cu5_pennpy_module[] = {
+ 	{
+ 		"bless", cu5_pennpy_meth_bless, METH_VARARGS,
+@@ -163,6 +335,36 @@
+ 		"Notify the iterable, target, of message."
+ 	},
+ 
++	{
++		"valid_dbref", cu5_pennpy_meth_valid_dbref, METH_VARARGS,
++		"valid_dbref(dbref)\n"
++		"Check if dbref is a valid, non-garbage object."
++	},
++
++	{
++		"get_attr", cu5_pennpy_meth_get_attr, METH_VARARGS,
++		"get_attr(dbref, name)\n"
++		"Returns value of attribute dbref/name (or None)."
++	},
++
++	{
++		"set_attr", cu5_pennpy_meth_set_attr, METH_VARARGS,
++		"set_attr(dbref, name, value)\n"
++		"Sets value of attribute dbref/name.  None clears."
++	},
++
++	{
++		"eval_attr", cu5_pennpy_meth_eval_attr, METH_VARARGS,
++		"eval_attr(dbref, name, ...)\n"
++		"Evaluate attribute with the given arguments."
++	},
++
++	{
++		"eval_str", cu5_pennpy_meth_eval_str, METH_VARARGS,
++		"eval_str(string, ...)\n"
++		"Evaluate string with the given arguments."
++	},
++
+ 	{ NULL, NULL, 0, NULL }
+ };
+ 
+@@ -415,6 +617,91 @@
+ }
+ 
+ /*
++ * Soft code expression evaluation.  Modeled after utils.c:call_attrib().
++ */
++
++static int
++cu5_pennpy_get_eval_args(PyObject *args, int start_idx,
++                         char *wenv_buf, int *wenv_argc)
++{
++	int ii, argc;
++
++	argc = 0;
++	for (ii = start_idx; ii < PyTuple_GET_SIZE(args); ii++) {
++		char *bp = &wenv_buf[argc * BUFFER_LEN];
++
++		if (!cu5_pennpy_unparse(PyTuple_GET_ITEM(args, ii), bp, &bp)) {
++			PyErr_SetString(PyExc_RuntimeError, "Can't coerce");
++			return 0;
++		}
++
++		*bp = '\0';
++
++		if (++argc == 10) {
++			break;
++		}
++	}
++
++	*wenv_argc = argc;
++	return 1;
++}
++
++static PyObject *
++cu5_pennpy_eval_str(int id, const char *to_eval, char *wenv_buf, int wenv_argc)
++{
++	char rbuff[BUFFER_LEN], *rp;
++
++	char *old_wenv[10];
++	int ii, pe_ret;
++	char *saver[NUMQ];
++	struct re_save rsave;
++
++	/* Save state. */
++	save_global_regs("localize", saver);
++	save_regexp_context(&rsave);
++
++	/* Replace state. */
++	for (ii = 0; ii < NUMQ; ii++) {
++		global_eval_context.renv[ii][0] = '\0';
++	}
++
++	global_eval_context.re_code = NULL;
++	global_eval_context.re_subpatterns = -1;
++	global_eval_context.re_offsets = NULL;
++	global_eval_context.re_from = NULL;
++
++	for (ii = 0; ii < wenv_argc; ii++) {
++		old_wenv[ii] = global_eval_context.wenv[ii];
++		global_eval_context.wenv[ii] = &wenv_buf[ii * BUFFER_LEN];
++	}
++	for (; ii < 10; ii++) {
++		old_wenv[ii] = global_eval_context.wenv[ii];
++		global_eval_context.wenv[ii] = NULL;
++	}
++
++	/* Make the call. */
++	rp = rbuff;
++	pe_ret = process_expression(rbuff, &rp, &to_eval, id, id, GOD,
++	                            PE_DEFAULT, PT_DEFAULT, NULL);
++
++	/* Restore state. */
++	for (ii = 0; ii < 10; ii++) {
++		global_eval_context.wenv[ii] = old_wenv[ii];
++	}
++
++	restore_regexp_context(&rsave);
++	restore_global_regs("localize", saver);
++
++	/* Return in Python string. */
++	if (pe_ret) {
++		PyErr_SetString(PyExc_RuntimeError, "CPU limit reached");
++		return NULL;
++	}
++
++	return PyString_FromStringAndSize(rbuff, rp - rbuff);
++}
++
++/*
+  * Timer stuff.
+  */
+ 
+Index: game/python/__pennmush__.py
+===================================================================
+--- game/python/__pennmush__.py	(revision 0)
++++ game/python/__pennmush__.py	(revision 13)
+@@ -0,0 +1,39 @@
++# Stub moddule for testing PennPy code without PennMUSH.
++
++# Emulate notify.
++def notify(target, message):
++	for dbref in target:
++		print dbref, '=>', message
++
++# Emulate blessing.
++_fake_blessable = True
++
++def bless(mod_obj):
++	global _fake_blessable
++	
++	if not _fake_blessable:
++		raise ValueError
++	
++	if mod_obj is None:
++		_fake_blessable = False
++
++# Emulate DB access.
++_fake_db = {0: ('One', {'LAST': 42})}
++
++def valid_dbref(dbref):
++	return (dbref in _fake_db)
++
++def get_attr(dbref, attr):
++	fake_attrs = _fake_db[dbref][1]
++	return fake_attrs.get(attr, None)
++
++def set_attr(dbref, attr, value):
++	fake_attrs = _fake_db[dbref][1]
++	if value is None:
++		del _fake_db[dbref][1][attr]
++	else:
++		_fake_db[dbref][1][attr] = value
++
++# Timer hook stub.
++def set_timer(hook):
++	pass
+
+Property changes on: game/python/__pennmush__.py
+___________________________________________________________________
+Added: svn:eol-style
+   + native
+
+Index: game/python/pennmush.py
+===================================================================
+--- game/python/pennmush.py	(revision 11)
++++ game/python/pennmush.py	(revision 13)
+@@ -1,4 +1,46 @@
+-# Just import everything from the internal __pennmush__ module for now.
++# Import everything from the internal __pennmush__ module.
+ from __pennmush__ import *
+ 
+-# TODO: Stub module for testing PennPy code without PennMUSH.
++# Some useful utility routines.
++def parse_dbref(dbref):
++	if dbref[0] is not '#':
++		raise ValueError('Not a dbref')
++	return int(dbref[1:])
++
++# Pythonic interface to PennMUSH objects.  Be careful about how we define the
++# proxy classes, since the underlying DB object can be deleted and recreated
++# whenever PennMUSH has control.  It's only really good transiently (within a
++# single PyCall into the Python interpreter).
++class _PennDBProxy(object):
++	__slots__ = ()
++	
++	def __getitem__(self, key):
++		if not valid_dbref(key):
++			raise KeyError('No such dbref')
++		return _PennObjectProxy(key)
++
++class _PennObjectProxy(object):
++	__slots__ = ('dbref', 'attrs')
++	
++	def __init__(self, dbref):
++		self.dbref = dbref
++		self.attrs = _PennAttributeProxy(dbref)
++
++class _PennAttributeProxy(object):
++	__slots__ = ('dbref')
++	
++	def __init__(self, dbref):
++		self.dbref = dbref
++	
++	def __getitem__(self, name):
++		return get_attr(self.dbref, name)
++	
++	def __setitem__(self, name, value):
++		if value is not None:
++			value = str(value)
++		set_attr(self.dbref, name, value)
++	
++	def __delitem__(self, name):
++		set_attr(self.dbref, name, None)
++
++db = _PennDBProxy()
+Index: game/python/main.py
+===================================================================
+--- game/python/main.py	(revision 11)
++++ game/python/main.py	(revision 13)
+@@ -36,7 +36,7 @@
+ 
+ def test_notify(target, message):
+ 	# FIXME: This isn't how you detect dbrefs for real.
+-	int_list = [int(dbref.lstrip('#')) for dbref in target.split()]
++	int_list = [pennmush.parse_dbref(dbref) for dbref in target.split()]
+ 	pennmush.notify(int_list, message)
+ 
+ import hidden

@@ -1,0 +1,14 @@
+START OF LOG.
+[06/10 00:01:41] Indexing file txt/help.txt
+[06/10 00:01:41] 1508 topics indexed.
+[06/10 00:01:41] Indexing file txt/news.txt
+[06/10 00:01:41] 3 topics indexed.
+[06/10 00:01:41] Indexing file txt/help.txt (admin topics)
+[06/10 00:01:41] 2 topics indexed.
+[06/10 00:01:41] Indexing file txt/news.txt (admin topics)
+[06/10 00:01:41] 1 topics indexed.
+[06/10 00:02:29] WIZ: BBS - Myrddin's Global BBS v4.0.6(#26TWX) --> Thrakhath(#77PwenACc): ** FORCE: +bbscan
+[06/10 00:04:00] WIZ: Sivar(#1PDWACc) --> Sivar(#1PDWACc): Poll POWER SET
+[06/10 00:04:01] WIZ: Sivar(#1PDWACc) --> Sivar(#1PDWACc): PYCALL POWER SET
+[06/10 00:05:08] WIZ: BBS - Myrddin's Global BBS v4.0.6(#26TWX) --> Rince(#3PWweACMc): FORCE: +bbscan
+END OF LOG.

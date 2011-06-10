@@ -1,0 +1,7 @@
+-----------------------------------------------------------------------------
+Use connect <name> <password> to connect to your existing character.
+We are not presently open to new characters.
+Use QUIT to logout.
+Use the WHO command to find out who is online currently.
+-----------------------------------------------------------------------------
+

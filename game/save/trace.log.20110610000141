@@ -1,0 +1,51 @@
+START OF LOG.
+[07/01 15:09:40] CHUNK: chunk subsystem initialized
+[07/01 15:09:41] 'No such file or directory' errors immediately following are probably harmless.
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/connect.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/motd.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/wizmotd.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/register.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/quit.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/down.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/full.html"): No such file or directory
+[07/01 15:09:41] file_watch_init:inotify_add_watch("txt/guest.html"): No such file or directory
+[07/10 13:10:05] Reloading help indexes and cached files after detecting a change.
+[07/10 13:10:05] 'No such file or directory' errors immediately following are probably harmless.
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/connect.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/motd.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/wizmotd.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/register.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/quit.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/down.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/full.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/guest.html"): No such file or directory
+[07/10 13:10:05] Reloading help indexes and cached files after detecting a change.
+[07/10 13:10:05] 'No such file or directory' errors immediately following are probably harmless.
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/connect.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/motd.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/wizmotd.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/register.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/quit.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/down.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/full.html"): No such file or directory
+[07/10 13:10:05] file_watch_init:inotify_add_watch("txt/guest.html"): No such file or directory
+[07/10 13:10:16] Reloading help indexes and cached files after detecting a change.
+[07/10 13:10:16] 'No such file or directory' errors immediately following are probably harmless.
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/connect.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/motd.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/wizmotd.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/register.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/quit.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/down.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/full.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/guest.html"): No such file or directory
+[07/10 13:10:16] Reloading help indexes and cached files after detecting a change.
+[07/10 13:10:16] 'No such file or directory' errors immediately following are probably harmless.
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/connect.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/motd.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/wizmotd.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/register.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/quit.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/down.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/full.html"): No such file or directory
+[07/10 13:10:16] file_watch_init:inotify_add_watch("txt/guest.html"): No such file or directory

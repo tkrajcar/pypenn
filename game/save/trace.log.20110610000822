@@ -1,0 +1,12 @@
+START OF LOG.
+[06/10 00:07:17] CHUNK: chunk subsystem initialized
+[06/10 00:07:17] 'No such file or directory' errors immediately following are probably harmless.
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/connect.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/motd.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/wizmotd.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/register.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/quit.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/down.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/full.html"): No such file or directory
+[06/10 00:07:17] file_watch_init:inotify_add_watch("txt/guest.html"): No such file or directory
+END OF LOG.
