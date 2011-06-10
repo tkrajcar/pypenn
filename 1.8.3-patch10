@@ -1,0 +1,4843 @@
+This is patch10 to PennMUSH 1.8.3. After applying this patch, you will
+have version 1.8.3p10
+
+To apply this patch, save it to a file in your top-level 1.8.3p9 MUSH directory,
+and do the following:
+        patch -p1 < 1.8.3-patch10
+        ./configure
+        make install
+
+If you use GNU patch 2.2, you probably want the above to be 'patch -b -p0',
+not just 'patch -p0'.
+
+Unix (or cygwin) users need not worry about failed hunks in src/switchinc.c,
+hdrs/switches.h, hdrs/cmds.h, or hdrs/funs.h. These files are automatically
+rebuilt on compile. On the off chance they appear not to be, simply
+rm them and re-run make.
+
+Then @shutdown/reboot your MUSH.
+    - Shawn/Raevnos
+
+In this patch:
+Major changes:
+ * Switched project management (Bug tracking, revision control, etc.)
+   to Google Code. See http://code.google.com/p/pennmush
+
+Minor changes:
+ * @search and lsearch() now only charge 100 pennies if an evaluating
+   search (EVAL, EPLAYER, EROOM, ETHING, EOBJECT, EEXIT or ELOCK) or
+   an exhaustive attribute search (COMMAND, LISTEN) is performed.
+ * The %u sub now works for built-in commands, as well as $-commands.
+   Useful for @hooks. [MG]
+ * The use command now understands english matching. Suggested by
+   Yuriko.
+ * Rooms can now use @open/open(). [MG]
+ * Mortals can now use '@attribute <attrib>' to see the default flags
+   of a standard attribute. [MG]
+ * @channel/priv now uses 'thing' instead of 'object' for channels
+   which allow things to join. 'object' is kept as an alias. [MG]
+ * The chatdb now saves channel buffers and mogrifier objects, so you
+   don't need to put @chan/buffer or @chan/mogrifier in @startup. [MG]
+
+Flags:
+ * The HEAR_CONNECT flag is now used (instead of MONITOR) to allow
+   players to see 'GAME: Foo has [dis]connected.' messages. MONITOR
+   on players now enables ^-patterns, the same as on things/rooms.
+   Any players with the MONITOR flag will have it replaced with the
+   HEAR_CONNECT flag automatically. Requested by Malix@8BitMUSH. [MG]
+
+Functions:
+  * lpids(), getpids(), and pidinfo() provide information about
+    wait/semaphore process ids and processes. Suggested by
+    Yuriko@M*U*S*H, code by Javelin.
+  * lalign() works like align(), but takes a single arg with a list of
+    columns, instead of one arg for each column. Suggested by Teal. [MG]
+  * New lockowner() function returns the owner of an @lock. Suggested
+    by Paige. [MG]
+
+Fixes:
+  * @pcreate without a password would crash the game. Fixed. [GM]
+  * DARK-disconnected on channels was turned into DARK-connected, on
+    disconnect. Reported by Paige@M*U*S*H, among others.
+  * MOGRIFY`BLOCK wasn't being called, as help @channel6 said it was.
+    Oops. [GM]
+  * Help fixes, by Sketch and others. [GM]
+  * @clone could mess up the names of the original and the clone. 
+    Reported by qa'toq. [SW]
+  * Crash bugs in rand() and randword(). [SW]
+  * Added --disable-zlib configure option to turn off using
+    zlib to work directly with compressed databases. Passing this to
+    configure makes the game act like pre p8 ones. [SW]
+  * member() now ignores ANSI in matches. Reported by Minion. [MG]
+  * Regexp $-commands are now ansi aware. As in: ansi is passed to %0-%9. [GM]
+  * hidden() now works on descriptors as advertised. Reported by Teal. [MG]
+  * @name could cause a crash. Fixed. Reported by Zedekiah@M*U*S*H [GM]
+  * @nscemit/silent didn't work. Reported by Paige. [MG]
+  * Win32 compile fixes and project file updates.
+  * The chatdb failed to load when objects of the wrong type were listed
+    as channel members. Reported by Teal. [MG]
+  * flags() on an attribute used as the root of a tree would include the
+    ` twice.
+  * baseconv() would hang the MUSH if passed a negative <number>. Reported
+    by Mercutio. [MG]
+
+ BUGS                         |    2 
+ CHANGES.183                  |   67 +++-
+ FAQ                          |    5 
+ Makefile.in                  |    4 
+ Patchlevel                   |    2 
+ README                       |   29 -
+ configure                    |   13 
+ configure.in                 |    8 
+ game/txt/hlp/pennchat.hlp    |    8 
+ game/txt/hlp/penncmd.hlp     |   82 ++--
+ game/txt/hlp/penncode.hlp    |   10 
+ game/txt/hlp/pennflag.hlp    |   34 +-
+ game/txt/hlp/pennfunc.hlp    |  121 +++++--
+ game/txt/hlp/penntop.hlp     |   24 -
+ game/txt/hlp/pennv183.hlp    |   67 +++-
+ game/txt/hlp/pennvOLD.hlp    |    2 
+ hdrs/SFMT.h                  |    2 
+ hdrs/extchat.h               |    3 
+ hdrs/mushdb.h                |    1 
+ hdrs/parse.h                 |    1 
+ hdrs/version.h               |    6 
+ src/atr_tab.c                |    1 
+ src/attrib.c                 |    3 
+ src/bsd.c                    |   50 ++-
+ src/cmds.c                   |   35 +-
+ src/command.c                |   87 ++---
+ src/cque.c                   |  187 ++++++++++-
+ src/create.c                 |    6 
+ src/db.c                     |   14 
+ src/extchat.c                |   43 +-
+ src/flags.c                  |    7 
+ src/function.c               |    5 
+ src/fundb.c                  |   32 +
+ src/funlist.c                |   17 -
+ src/funmath.c                |    1 
+ src/funmisc.c                |   27 -
+ src/funstr.c                 |   85 +++--
+ src/game.c                   |   12 
+ src/markup.c                 |    2 
+ src/mysocket.c               |    4 
+ src/notify.c                 |    2 
+ src/parse.c                  |   26 +
+ src/pcre.c                   |    4 
+ src/predicat.c               |    3 
+ src/set.c                    |   57 +--
+ src/wild.c                   |   42 +-
+ src/wiz.c                    |   44 --
+ test/testansi.pl             |   19 +
+ test/testrand.pl             |    5 
+ win32/README.txt             |   15 
+ win32/config.h               |    2 
+ win32/funs.h                 |    3 
+ win32/msvc6/pennmush.dsp     |  212 ++++++------
+ win32/vs2005/pennmush.vcproj |  284 ++++++++---------
+ win32/vs2008/pennmush.sln    |   20 +
+ win32/vs2008/pennmush.vcproj |  713 +++++++++++++++++++++++++++++++++++++++++++
+ 57 files changed, 2592 insertions(+), 625 deletions(-)
+
+Prereq: 1.8.3p9
+diff -ruNd --speed-large-files pennmush-1.8.3p9/Patchlevel pennmush-1.8.3p10/Patchlevel
+--- pennmush-1.8.3p9/Patchlevel	2009-02-27 15:56:00.000000000 -0800
++++ pennmush-1.8.3p10/Patchlevel	2009-06-01 23:18:54.175032000 -0700
+@@ -1,3 +1,3 @@
+ Do not edit this file. It is maintained by the official PennMUSH patches.
+-This is PennMUSH 1.8.3p9
++This is PennMUSH 1.8.3p10
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/BUGS pennmush-1.8.3p10/BUGS
+--- pennmush-1.8.3p9/BUGS	2008-11-01 14:48:42.000000000 -0700
++++ pennmush-1.8.3p10/BUGS	2009-06-26 13:11:22.061177000 -0700
+@@ -27,5 +27,5 @@
+ 
+ 
+ You can browse the bug and suggestion database at
+-http://dev.pennmush.org to see more.
++http://code.google.com/p/pennmush/issues/list to see more.
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/CHANGES.183 pennmush-1.8.3p10/CHANGES.183
+--- pennmush-1.8.3p9/CHANGES.183	2009-02-28 18:57:45.000000000 -0800
++++ pennmush-1.8.3p10/CHANGES.183	2009-08-24 00:51:24.880841000 -0700
+@@ -8,13 +8,78 @@
+  responsible for most unattributed changes.
+ [EEH] is Ervin Hearn III, a PennMUSH developer (aka Noltar)
+ [GM] is Greg Millam, a PennMUSH developer (aka Walker)
++[MG] is Mike Griffiths, a PennMUSH developer (aka Talvo)
++[TAP] is T. Alexander Popiel, a former PennMUSH developer (aka Talek)
+ [3] refers to code by (or inspired by) TinyMUSH 3.0
+ [MUX] refers to code by (or inspired by) TinyMUX 2.x
+ [Rhost] refers to code by (or inspired by) RhostMUSH
+-[TAP] is T. Alexander Popiel, a former PennMUSH developer (aka Talek)
+ 
+ ==========================================================================
+ 
++Version 1.8.3 patchlevel 10                     Aug 24, 2009
++
++Major changes:
++ * Switched project management (Bug tracking, revision control, etc.)
++   to Google Code. See http://code.google.com/p/pennmush
++
++Minor changes:
++ * @search and lsearch() now only charge 100 pennies if an evaluating
++   search (EVAL, EPLAYER, EROOM, ETHING, EOBJECT, EEXIT or ELOCK) or
++   an exhaustive attribute search (COMMAND, LISTEN) is performed.
++ * The %u sub now works for built-in commands, as well as $-commands.
++   Useful for @hooks. [MG]
++ * The use command now understands english matching. Suggested by
++   Yuriko.
++ * Rooms can now use @open/open(). [MG]
++ * Mortals can now use '@attribute <attrib>' to see the default flags
++   of a standard attribute. [MG]
++ * @channel/priv now uses 'thing' instead of 'object' for channels
++   which allow things to join. 'object' is kept as an alias. [MG]
++ * The chatdb now saves channel buffers and mogrifier objects, so you
++   don't need to put @chan/buffer or @chan/mogrifier in @startup. [MG]
++
++Flags:
++ * The HEAR_CONNECT flag is now used (instead of MONITOR) to allow
++   players to see 'GAME: Foo has [dis]connected.' messages. MONITOR
++   on players now enables ^-patterns, the same as on things/rooms.
++   Any players with the MONITOR flag will have it replaced with the
++   HEAR_CONNECT flag automatically. Requested by Malix@8BitMUSH. [MG]
++
++Functions:
++  * lpids(), getpids(), and pidinfo() provide information about
++    wait/semaphore process ids and processes. Suggested by
++    Yuriko@M*U*S*H, code by Javelin.
++  * lalign() works like align(), but takes a single arg with a list of
++    columns, instead of one arg for each column. Suggested by Teal. [MG]
++  * New lockowner() function returns the owner of an @lock. Suggested
++    by Paige. [MG]
++
++Fixes:
++  * @pcreate without a password would crash the game. Fixed. [GM]
++  * DARK-disconnected on channels was turned into DARK-connected, on
++    disconnect. Reported by Paige@M*U*S*H, among others.
++  * MOGRIFY`BLOCK wasn't being called, as help @channel6 said it was.
++    Oops. [GM]
++  * Help fixes, by Sketch and others. [GM]
++  * @clone could mess up the names of the original and the clone. 
++    Reported by qa'toq. [SW]
++  * Crash bugs in rand() and randword(). [SW]
++  * Added --disable-zlib configure option to turn off using
++    zlib to work directly with compressed databases. Passing this to
++    configure makes the game act like pre p8 ones. [SW]
++  * member() now ignores ANSI in matches. Reported by Minion. [MG]
++  * Regexp $-commands are now ansi aware. As in: ansi is passed to %0-%9. [GM]
++  * hidden() now works on descriptors as advertised. Reported by Teal. [MG]
++  * @name could cause a crash. Fixed. Reported by Zedekiah@M*U*S*H [GM]
++  * @nscemit/silent didn't work. Reported by Paige. [MG]
++  * Win32 compile fixes and project file updates.
++  * The chatdb failed to load when objects of the wrong type were listed
++    as channel members. Reported by Teal. [MG]
++  * flags() on an attribute used as the root of a tree would include the
++    ` twice.
++  * baseconv() would hang the MUSH if passed a negative <number>. Reported
++    by Mercutio. [MG]
++
+ Version 1.8.3 patchlevel 9                      Feb 28, 2009
+ 
+ Fixes:
+diff -ruNd --speed-large-files pennmush-1.8.3p9/FAQ pennmush-1.8.3p10/FAQ
+--- pennmush-1.8.3p9/FAQ	2006-11-16 04:36:30.000000000 -0800
++++ pennmush-1.8.3p10/FAQ	2009-06-26 13:11:22.061177000 -0700
+@@ -43,7 +43,7 @@
+ 1. How do I ask for help with a problem?
+ 
+ Email to pennmush-developers@pennmush.org
+-or visit http://www.pennmush.org/jitterbug/pennmush
++or visit http://code.google.com/p/pennmush
+ 
+ When asking for help, please be as specific as you can about the
+ problem. Include at least the following:
+@@ -58,8 +58,7 @@
+ 
+ 2. How do I report a bug?
+ 
+-Email to pennmush-bugs@pennmush.org
+-or visit http://www.pennmush.org/jitterbug/pennmush
++Visit http://code.google.com/p/pennmush/issues/list
+ 
+ Include specific information as described in #3 above. If you know
+ what's causing the bug, or how to fix it, or if you have a patch for
+diff -ruNd --speed-large-files pennmush-1.8.3p9/Makefile.in pennmush-1.8.3p10/Makefile.in
+--- pennmush-1.8.3p9/Makefile.in	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/Makefile.in	2009-08-24 00:51:24.880841000 -0700
+@@ -3,7 +3,7 @@
+ # - System configuration - #
+ 
+ VERSION=1.8.3
+-PATCHLEVEL=8
++PATCHLEVEL=10
+ 
+ #
+ # This section of the file should be automatically configured by
+@@ -65,7 +65,7 @@
+ src/switchinc.c: src/SWITCHES Patchlevel
+ 	@PERL@ utils/mkcmds.pl switches
+ 
+-hdrs/funs.h: src/fun*.c src/bsd.c src/conf.c src/extmail.c src/help.c src/markup.c src/wiz.c src/sql.c Patchlevel
++hdrs/funs.h: src/fun*.c src/bsd.c src/conf.c src/extmail.c src/help.c src/markup.c src/wiz.c src/sql.c Patchlevel src/cque.c
+ 	@PERL@ utils/mkcmds.pl functions
+ 
+ hdrs/patches.h: patches/*
+diff -ruNd --speed-large-files pennmush-1.8.3p9/README pennmush-1.8.3p10/README
+--- pennmush-1.8.3p9/README	2007-06-12 15:21:47.000000000 -0700
++++ pennmush-1.8.3p10/README	2009-06-26 13:11:22.061177000 -0700
+@@ -27,16 +27,6 @@
+ numbers (like 1.7.2) and patchlevels (like p32), usually written
+ together (1.7.2p32).
+ 
+-Starting with 1.7.2, version numbers that are even (like 1.7.2) are
+-stable releases - patchlevels on the latest stable release will only be
+-issued to fix serious bugs. Version numbers that are odd (like 1.7.3)
+-are development releases - patchlevels on the latest development release
+-may include new features as well as bugfixes, and development releases
+-may not be as stable as stable releases. On the other hand, some new
+-features may *increase* stability without fixing bugs per se, and it's
+-quite likely that later patchlevels on the development version will be
+-more stable than those on the "stable" version.
+-
+ PennMUSH is a TinyMUD derivative, and one of the branches along the MUSH
+ line. "Vanilla" TinyMUSH, which added the "v" registers and functions to
+ the basic TinyMUD building commands, was written by Larry Foard. The code
+@@ -132,13 +122,14 @@
+    informed of new patches, subscribe to pennmush-announce instead,
+    at http://www.pennmush.org/mailman/listinfo/pennmush-announce)
+ 
+-2. The PennMUSH bug-tracking site is http://dev.pennmush.org/
+-   To file a new report, click on the 'New Ticket' link. If
+-   you want to get emails about updates to the bug report, put your
+-   email address in the appropriate field. For 'type', please select
+-   the most appropriate category: Bug, suggested feature, documetation
+-   issue, build/compliation problems, etc. Be sure to include what version
+-   of PennMUSH you found the problem on.
++2. The PennMUSH bug-tracking site is
++   http://code.google.com/p/pennmush/issues/list To file a new report,
++   click on the 'New issue' link. If you want to get emails about
++   updates to the bug report, put your email address in the
++   appropriate field. For 'type', please select the most appropriate
++   category: Bug, suggested feature, documetation issue,
++   build/compliation problems, etc. Be sure to include what version of
++   PennMUSH you found the problem on.
+ 
+    If the problem resulted in a crash and a core dump, a stack trace of
+    the core dump (see the section above) should also be included.
+@@ -151,10 +142,6 @@
+    see what issues have been fixed for upcoming releases, and much more at
+    the site.
+ 
+-   The old way of emailing pennmush-bugs@pennmush.org still works, but using
+-   the web interface allows you to specifically give an issue type when 
+-   reporting something.
+-
+ ============================================================================
+ 
+ III. Getting a .pennmush.org hostname and mailing lists
+diff -ruNd --speed-large-files pennmush-1.8.3p9/configure pennmush-1.8.3p10/configure
+--- pennmush-1.8.3p9/configure	2009-02-28 17:32:40.000000000 -0800
++++ pennmush-1.8.3p10/configure	2009-06-01 23:18:54.175032000 -0700
+@@ -732,6 +732,7 @@
+ ac_user_opts='
+ enable_option_checking
+ with_perl
++enable_zlib
+ with_ssl
+ with_pcre
+ enable_sql
+@@ -1382,6 +1383,7 @@
+   --disable-option-checking  ignore unrecognized --enable/--with options
+   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
++  --disable-zlib          Don't use zlib for database compression.
+   --disable-sql           Don't use SQL support
+   --disable-ipv6          Don't use IPv6 networking
+   --disable-nls           Don't use message-translation
+@@ -13045,6 +13047,16 @@
+ fi
+ 
+ 
++
++# Check whether --enable-zlib was given.
++if test "${enable_zlib+set}" = set; then
++  enableval=$enable_zlib; enable_zlib=$enableval
++else
++  enable_zlib=yes
++fi
++
++if test "$enable_zlib" = "yes"; then
++
+ { $as_echo "$as_me:$LINENO: checking for gzungetc in -lz" >&5
+ $as_echo_n "checking for gzungetc in -lz... " >&6; }
+ if test "${ac_cv_lib_z_gzungetc+set}" = set; then
+@@ -13119,6 +13131,7 @@
+ 
+ fi
+ 
++fi
+ 
+ # with_ssl=set
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/configure.in pennmush-1.8.3p10/configure.in
+--- pennmush-1.8.3p9/configure.in	2009-02-28 17:32:40.000000000 -0800
++++ pennmush-1.8.3p10/configure.in	2009-06-01 23:18:54.175032000 -0700
+@@ -185,7 +185,13 @@
+ AC_CHECK_LIB(crypt, crypt)
+ LIB_SOCKET_NSL
+ AC_CHECK_LIB(fam, FAMOpen)
+-AC_CHECK_LIB(z, gzungetc)
++
++
++AC_ARG_ENABLE(zlib, AS_HELP_STRING([--disable-zlib], [Don't use zlib for database compression.]),
++		    enable_zlib=$enableval, enable_zlib=yes)
++if test "$enable_zlib" = "yes"; then
++ AC_CHECK_LIB(z, gzungetc)
++fi
+ 
+ # with_ssl=set
+ CHECK_SSL
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/index.hlp pennmush-1.8.3p10/game/txt/hlp/index.hlp
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/pennchat.hlp pennmush-1.8.3p10/game/txt/hlp/pennchat.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/pennchat.hlp	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/game/txt/hlp/pennchat.hlp	2009-08-14 22:52:17.509335000 -0700
+@@ -207,7 +207,7 @@
+   can create a new channel, though there will be a cost associated
+   with creation (see @config chat). Possible <priv> specifications:
+   * "player" - players may use the channel
+-  * "object" - objects may use the channel
++  * "thing" - things may use the channel
+   * "admin" - only royalty/wizards/chat_privs may use the channel
+   * "wizard" - only wizards may use the channel
+   * "quiet" - channel will not show connection messages
+@@ -278,7 +278,7 @@
+ 
+   %0 - (Depends on the mogrifier.)
+   %1 - Channel name (unmogrified).
+-  %2 - Chat type (", :, ;, |)
++  %2 - Chat type (", :, ;, |, @)
+   %3 - Message.
+   %4 - Player chan title.
+   %5 - Player name.
+@@ -337,11 +337,11 @@
+ Here's the legend for reading the @channel/list output:
+ 
+ Channel Name               Num Users Num Msgs  Access Locks     Status  Buf
+-Sample                             1        0 [DPOWQHo jsmvh*] [On  QH]   4
++Sample                             1        0 [DPTWQHo jsmvh*] [On  QH]   4
+                                                ||||||| ||||||   |   ||    |
+ Channel is DISABLED----------------------------/|||||| ||||||   |   ||    |
+ Channel allows PLAYERS--------------------------/||||| ||||||   |   ||    |
+-Channel allows OBJECTS---------------------------/|||| ||||||   |   ||    |
++Channel allows THINGS----------------------------/|||| ||||||   |   ||    |
+ Channel is Wizard-only (W) or Admin-only (A)------/||| ||||||   |   ||    |
+ Channel is QUIET-----------------------------------/|| ||||||   |   ||    |
+ Channel is HIDE_OK----------------------------------/| ||||||   |   ||    |
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/penncmd.hlp pennmush-1.8.3p10/game/txt/hlp/penncmd.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/penncmd.hlp	2009-02-24 08:51:55.000000000 -0800
++++ pennmush-1.8.3p10/game/txt/hlp/penncmd.hlp	2009-08-14 20:19:58.417007000 -0700
+@@ -769,7 +769,7 @@
+   Example: Show the room's zone after its name.
+   @nameformat here = %1 [if(isdbref(zone(%0)),<[name(zone(%0))]>)]
+ 
+-See also: @exitformat, @conformat, @descformat
++See also: @exitformat, @conformat, @descformat, @nameaccent
+ & @cost
+   @cost <object> = <amount> 
+ 
+@@ -1509,12 +1509,11 @@
+   
+   When used without any arguments, this command lists all global
+   user-defined functions. For wizards and others with the Functions
+-  power, it also lists the dbref number and attribute corresponding
+-  to the listed functions.
++  power, it also lists the dbref number and attribute corresponding to
++  the listed functions.
+ 
+-  When used with a function name, it displays some information
+-  about how that function is parsed, and how many arguments it
+-  takes.
++  When used with a function name, it displays some information about
++  how that function is parsed, and how many arguments it takes.
+   
+   <switch> can be one of:
+   /disable, to disable a built in function.
+@@ -1527,22 +1526,24 @@
+ (continued in help @function2)
+ & @function2
+   <object> can be anything that the player using the @function command
+-  controls (if safer_ufun is enabled) or can examine (if not). 
+-  <function name> must be 30 characters or less. 
++  controls (if safer_ufun is enabled) or can examine (if not).
++  <function name> must be 30 characters or less.
+ 
+   A function defined using @function works just like any of the normal
+   MUSH functions, from the user's perspective. The functions are
+-  executed by the object, with its powers. 
++  executed by the object, with its powers.
+  
+   Functions defined via @function should follow the format used by
+   UFUN() - %0 is the first argument passed, %1 is the second argument
+-  passed, and so forth. Optional third and fourth arguments to @function
+-  can be used to set a parser-enforced number of arguments for the function.
+-  An optional fifth argument will set restriction flags. 
++  passed, and so forth. Optional third and fourth arguments to
++  @function can be used to set a parser-enforced number of arguments
++  for the function.  If the maximum arguments is negative, any
++  additional comments are treated as part of the text of the last
++  argument. An optional fifth argument will set restriction flags.
+ 
+-  The /preserve switch, for MUX compability, does the same thing as the
+-  'localize' restriction - treats the attribute that's evaluated as if it 
+-  were called with ulocal() instead of u().
++  The /preserve switch, for MUX compability, does the same thing as
++  the 'localize' restriction - treats the attribute that's evaluated
++  as if it were called with ulocal() instead of u().
+   
+   Example:
+   
+@@ -1559,7 +1560,7 @@
+   Global user-defined functions are not automatically loaded when the
+   game is restarted. In order to avoid objects which attempt to use
+   functions that have not been loaded, a @startup containing @function
+-  commands should be set on a wizard object with as low a dbref number 
++  commands should be set on a wizard object with as low a dbref number
+   as possible; object #1 (generally God) is suggested for this use.
+ 
+   For example, if you have one object that stores all your global
+@@ -1568,30 +1569,29 @@
+ 
+     @startup #1=@dol lattr(#100)=@function ##=#100,##
+ 
+-  And then store each function as an attribute of the same name on 
++  And then store each function as an attribute of the same name on
+   object #100.
+ (continued in help @function4)
+ & @function4
+  Normally, built in functions cannot be overriden by @functions.
+- However, if a built-in function is deleted with @function/delete,
+- you can then make a @function with the same name. "Deleted" built-ins
+- can still be called through the FN() function, and can have
+- restrictions applied with @function/restrict/builtin.
+- @function/restore will delete the @function and turn the built in
+- version back on.
++ However, if a built-in function is deleted with @function/delete, you
++ can then make a @function with the same name. "Deleted" built-ins can
++ still be called through the FN() function, and can have restrictions
++ applied with @function/restrict/builtin.  @function/restore will
++ delete the @function and turn the built in version back on.
+ 
+- Using @function on an already-added @function will delete the old one and
+- install a new function with none of the settings of the old one kept.
++ Using @function on an already-added @function will delete the old one
++ and install a new function with none of the settings of the old one
++ kept.
+ 
+  For example:
+   @function/delete ansi
+   &ansi_fun #1234=%1
+-  @function ansi=#1234, ansi_fun, 2, 2, noguest
++  @function ansi=#1234, ansi_fun, 2, -2, noguest
+ 
+- will create a new version of ansi() that doesn't do any
+- colorization, and that requires it to be called with exactly
+- 2 arguments, like the built-in version. It will be restricted to
+- non-guest players.
++ will create a new version of ansi() that doesn't do any colorization,
++ and that needs two arguments, like the built-in version. It will be
++ restricted to non-guest players.
+ 
+ See also: RESTRICT, FUNCTIONS, @startup, fn()
+ & @grep
+@@ -2754,7 +2754,7 @@
+   can be used to disable the newline and is recommended for users with
+   these clients.
+ 
+-See also: @prompt, prompt()
++See also: @prompt, prompt(), terminfo()
+ & @pemit
+   @pemit[/<switch>] <object> = <message>
+   
+@@ -3064,14 +3064,24 @@
+   If <class>=LISTEN, then @search will only return objects that respond to
+   <restriction> through a listen.
+ 
++  See "help @search4" for more.
++& @search4
++  
+   For the class TYPE=PLAYER, and for PLAYER=<player-name>, anyone may
+   obtain information on any player.  In all other cases, wizards may
+   obtain information about other players, and players who pass a ZMP's
+-  zone-lock may obtain information about the ZMP. This is computationally
+-  expensive, costing 100 pennies. It is generally faster than @find.
++  zone-lock may obtain information about the ZMP.
++
++  Only one of any class can be specified. EVAL, EPLAYER, etc. all override
++  each other.
++
++  @search is only mildly computationally expensive for most of the search
++  classes.  computationally expensive searches are the evaluating searches
++  (EVAL, EPLAYER, ETHING/EOBJECT, EROOM, EEXIT) or the attribute pattern
++  searches (COMMAND, LISTEN)
+   
+-  See "help @search4" for some examples.
+-& @search4
++  See "help @search5" for some examples.
++& @search5
+   Examples:  
+     @search flags=Wc      <-- search for connected wizards.
+     @search type=room     <-- list all rooms owned by me.
+@@ -3079,7 +3089,7 @@
+     @search Joe eval=1,100,200   <-- list objects from #100-#200 owned by Joe.
+     @search eval=gt(money(##),10)     <-- list all objects owned by me  
+                                           worth more than 10 coins.
+-    @search all elock=FLAG^WIZARD|FLAG^ROYALTY   <-- list all players with
++    @search all elock=FLAG^WIZARD|FLAG^ROYALTY   <-- list all objects with
+                                                   wizard or royalty flags.
+     @search wizard_bc command=+who    <-- Forgot what object has your +who?
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/penncode.hlp pennmush-1.8.3p10/game/txt/hlp/penncode.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/penncode.hlp	2008-09-24 01:30:22.000000000 -0700
++++ pennmush-1.8.3p10/game/txt/hlp/penncode.hlp	2009-08-03 23:54:47.580318000 -0700
+@@ -6,18 +6,16 @@
+ 
+ The main PennMUSH web page is at http://www.pennmush.org
+ 
+-Report bugs and make suggestions at:  http://dev.pennmush.org
++Report bugs and make suggestions at:  http://code.google.com/p/pennmush
+ 
+ The PennMUSH community page is at http://community.pennmush.org
+ 
+ For information about downloading PennMUSH, see 'help download'.
+ For information about changes in versions of the code, see 'help changes'.
+ & download
+-The latest version of this MUSH code is available at
+-http://download.pennmush.org/Source.  It will be called something like
+-pennmush-1.7.6p0.tar.Z, depending on the version number. You will also
+-find files of translations of server messages into various languages
+-in Source/translations/<version>. See help i18n for more.
++The latest version of this MUSH code is available from
++http://code.google.com/p/pennmush/downloads/list. It will be called
++something like pennmush-1.8.3p9.tar.bz2, depending on the version number.
+ 
+ Also on that site is the MUSH manual, in /Manuals. It should be called
+ mushman.2.008.tar.Z or something similar; you should attempt to get at
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/pennflag.hlp pennmush-1.8.3p10/game/txt/hlp/pennflag.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/pennflag.hlp	2008-09-24 01:30:22.000000000 -0700
++++ pennmush-1.8.3p10/game/txt/hlp/pennflag.hlp	2009-07-16 12:43:04.791320000 -0700
+@@ -330,6 +330,13 @@
+   If a room is set HAVEN, the 'kill' command cannot be used in that room.
+ 
+ See also: @haven, kill
++& HEAR_CONNECT
++  Flag: HEAR_CONNECT (players)
++  
++  Players with this flag will received a message whenever a player
++  connects, disconnects, or is created. Mortals will not hear messages
++  for players connecting/disconnecting dark. Only royalty and wizards can
++  set this flag.
+ & HEAVY
+   Flag:  HEAVY (all types)
+ 
+@@ -429,23 +436,20 @@
+ 
+   See @link, TRUST, @parent, PARENTS
+ & MONITOR
+-  Flag:  MONITOR  (players)
+-  
+-  When set on a player, this flag notifies that player when anyone connects
+-  to or disconnects from the MUSH. It is valid only for players, and must be
+-  set by a wizard (although royalty may set themselves MONITOR).
+-
+-  Flag:  MONITOR  (things, rooms)
++  Flag:  MONITOR  (players, things, rooms)
+  
+-  When set on a thing or room, this flag activates the ^ listen
+-  patterns on the object. Objects which have ^ listen patterns but are
+-  not set MONITOR do not check those patterns.
++  The MONITOR flag activates the ^ listen patterns on an object.
++  Objects which have ^ listen patterns but are not set MONITOR
++  do not check those patterns.
+ 
+   When using the LISTEN Attribute Tree, you must set the Root
+   Attribute !NO_COMMAND. By default this Attribute/Attribute Root has
+   been set NO_COMMAND by the system. Attributes which are set HALT or
+   NO_COMMAND will not be evaluated for purposes of the ^ listen
+-  patterns
++  patterns.
++  
++  This flag used to allow players to hear when someone connected to
++  the game, but that is now controlled by the HEAR_CONNECT flag.  
+ & MYOPIC
+   Flag:  MYOPIC  (players)
+ 
+@@ -771,11 +775,11 @@
+ 
+ See also: ZONE MASTERS
+ & LISTEN_PARENT
+-  Flag:  LISTEN_PARENT (things, rooms)
++  Flag:  LISTEN_PARENT (players, things, rooms)
+   
+-  When set on a thing or room which also has the MONITOR flag set,
+-  this flag causes ^ listen patterns to be checked on the object's
+-  parents as well as on the object.
++  When set on an object which also has the MONITOR flag set, this flag
++  causes ^ listen patterns to be checked on the object's parents as
++  well as on the object.
+ 
+ See also: MONITOR, LISTENING
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/pennfunc.hlp pennmush-1.8.3p10/game/txt/hlp/pennfunc.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/pennfunc.hlp	2009-02-22 23:02:37.000000000 -0800
++++ pennmush-1.8.3p10/game/txt/hlp/pennfunc.hlp	2009-08-18 14:36:00.424976000 -0700
+@@ -132,12 +132,13 @@
+ 
+   alias()        andflags()     andlflags()    andlpowers()   config()
+   controls()     ctime()        elock()        findable()     flags()
+-  fullalias()    fullname()     hasattr()      hasattrp       hasflag()
+-  haspower()     hastype()      iname()        lflags()       lock()
+-  lstats()       money()        mtime()        mudname()      name()
+-  nattr()        nearby()       objid()        objmem()       orflags()
+-  orlflags()     orlpowers()    playermem()    poll()         powers()
+-  quota()        restarts()     type()         version()      visible()
++  fullalias()    fullname()     getpids()      hasattr()      hasattrp       
++  hasflag()      haspower()     hastype()      iname()        lflags()       
++  lock()         lpids()        lstats()       money()        mtime()        
++  mudname()      name()         nattr()        nearby()       objid()        
++  objmem()       orflags()      orlflags()     orlpowers()    pidinfo()
++  playermem()    poll()         powers()       quota()        restarts()     
++  type()         version()      visible()
+ 
+ & List functions
+   List functions take at least one list of elements and return
+@@ -354,11 +355,14 @@
+ 
+ See also: before(), rest()
+ & ALIGN()
++& LALIGN()
+   align(<widths>,<col1>,...,<coln>[,<filler>[,<colsep>[,<rowsep>]]])
++  lalign(<widths>,<colList>[,<delim>[,<filler>[,<colsep>[,<rowsep>]]]])
+ 
+   Creates columns of text, each column designated by <col1..coln>.
+   Each column is individually wrapped inside its own column, allowing
+-  for easy creation of book pages, newsletters, or the like.
++  for easy creation of book pages, newsletters, or the like. In lalign(),
++  <colList> is a <delim>-separated list of the columns.
+ 
+   <widths> is a space-separated list of column widths. '10 10 10' for
+   the widths argument specifies that there are 3 columns, each 10
+@@ -439,10 +443,10 @@
+   and(<boolean value 1>, <boolean value 2>[, ... , <boolean value N>])
+   cand(<boolean value 1>, <boolean value 2>[, ... , <boolean value N>])
+  
+-  Takes boolean values, and returns 1 if all of them are equivalent to
+-  true(1).  and() always evaluates all arguments (including side
+-  effects), while cand() stops evaluation after the first argument
+-  that evaluates to false.
++  Takes boolean values, and returns 1 if all of them are true.  and()
++  always evaluates all arguments (including side effects), while
++  cand() stops evaluation after the first argument that evaluates to
++  false.
+ 
+ See also: BOOLEAN VALUES, or(), xor(), not()
+ & ANDFLAGS()
+@@ -924,18 +928,17 @@
+ & CTIME()
+ & CSECS()
+   ctime(<object>[, <utc>])
+-  csecs(<objecct>)
++  csecs(<object>)
+  
+-  If creation times are enabled, this function will return the date
+-  and time that the object was created. If the optional <utc> argument
+-  is true, the time is returned for the UTC time zone, if false or
+-  present, for the local time zone.
++  ctime() returns the date and time that <object> was created. The time
++  returned is in the server's local timezone, unless <utc> is true, in
++  which case the time is in the UTC timezone.
+  
+   csecs() returns the time as the number of seconds since the epoch.
+ 
+   You must be able to examine an object to see its creation time.
+ 
+-See also: mtime()
++See also: mtime(), time(), secs()
+ & CTU()
+   ctu(<angle>,<from>,<to>)
+ 
+@@ -1562,6 +1565,14 @@
+   attribute.  You may get the attributes of objects you control, the
+   attributes you own on other objects, and publicly accessible
+   attributes.
++& GETPIDS()
++  getpids(<object>[/<attribute>])
++
++  Returns a space-separated list of semaphore queue process ids waiting
++  on the given <object> and semaphore <attribute>. If <attribute> is
++  not given, pids for all semaphores on the object are returned.
++
++See also: @ps, @wait, lpids(), pidinfo(), SEMAPHORES
+ & GRAB()
+ & REGRAB()
+ & REGRABI()
+@@ -2283,7 +2294,7 @@
+   MUSHes.
+  
+ See also: @lock, locktypes, elock(), lockflags(), llockflags(), lset(),
+-  llocks()
++  llocks(), lockowner()
+ & LLOCKS()
+ & LOCKS()
+   llocks(<object>)
+@@ -2298,7 +2309,7 @@
+   > th llocks(me)
+   Basic USER:ITSME Use
+ 
+-See also: lock(), lset(), lockflags(), llockflags()
++See also: lock(), lset(), lockflags(), llockflags(), lockowner()
+ & LOCKFLAGS()
+   lockflags(<object>[/<locktype>])
+   lockflags()
+@@ -2310,7 +2321,7 @@
+   Given no arguments, this function returns a string consisting of all
+   the flag letters the server knows.
+ 
+-See also: llockflags(), lset(), lock(), llocks()
++See also: llockflags(), lset(), lock(), llocks(), lockowner()
+ & LLOCKFLAGS()
+   llockflags(<object>[/<locktype>])
+   llockflags()
+@@ -2321,9 +2332,17 @@
+   Given no arguments, this function returns a space-separated list of
+   all flag names known to the server.
+ 
+-See also: lockflags(), lset(), lock(), llocks()
++See also: lockflags(), lset(), lock(), llocks(), lockowner()
++& LOCKOWNER()
++  lockowner(<object>[/<locktype>])
++  
++  This function returns the dbref of the player who owns the <locktype>
++  lock on <object>, or the Basic lock if no <locktype> is given. You
++  must be able to examine the lock to use this function.
++  
++See also: lockflags(), llockflags(), lset(), lock(), llocks()
+ & LSET()
+-  lset(<object>/<lock type>,[!]<flag>)
++  lset(<object>/<locktype>,[!]<flag>)
+   
+   This functions sets or clears flags on locks.
+   
+@@ -2706,18 +2725,17 @@
+   mtime(<object>[, <utc>])
+   msecs(<object>)
+  
+-  If creation times are enabled, this function will return the date
+-  and time that one of the object's attributes was last added,
+-  deleted, or modified. Only things, rooms, and exits have
+-  modification times. If the optional <utc> argument is true, the time
+-  is returned for the UTC time zone, if false or present, for the
+-  local time zone.
+- 
++  mtime() returns the date and time that one of <object>'s attributes or
++  locks was last added, deleted, or modified. The time returned is in the
++  server's local timezone, unless <utc> is true, in which case the time is
++  in the UTC timezone.
++  
+   msecs() returns the time as the number of seconds since the epoch.
++  
++  Only things, rooms, and exits have modification times. You must be able to
++  examine an object to see its modification time.
+ 
+-  You must be able to examine an object to see it's modification time.
+-
+-See also: ctime()
++See also: ctime(), time(), secs()
+ & MUDNAME()
+   mudname()
+  
+@@ -3043,9 +3061,9 @@
+   cor(<boolean value 1>, <boolean value 2>[, ... , <boolean value N>])
+  
+   Takes boolean values, and returns a 1 if at least one of the inputs
+-  is equivalent to true(1).  or() always evaluates all arguments
+-  (including side effects), while cor() stops evaluation after the
+-  first argument that evaluates to true.
++  is true.  or() always evaluates all arguments (including side
++  effects), while cor() stops evaluation after the first argument that
++  evaluates to true.
+ 
+ See also: BOOLEAN VALUES, and()
+ & ORFLAGS()
+@@ -3128,6 +3146,24 @@
+   
+   Returns the value of "pi" (3.14159265358979323846264338327, rounded
+   to the game's float_precision setting).
++& PIDINFO()
++  pidinfo(<pid>[,<list of fields>[,<output separator>]])
++
++  This function returns information about a process id if the player
++  has permission to see the process. 
++  The <list of fields> is a space-separated list that may contain the
++  following elements:
++	queue       the queue ("wait" or "semaphore") for the process
++	player      the queueing player
++        time        remaining time for timed queued entries (or -1)
++        object      the semaphore object for semaphores (or #-1)
++        attribute   the semaphore attribute for semaphores (or #-1)
++        command     the queued command
++   If <list of fields> is not provided, all fields are returned.
++   If <output separator> is provided, the output is separated by
++   that delimiting character.
++
++See also: @ps, lpids(), getpids()
+ & PLAYERMEM()
+   playermem(<player>)
+ 
+@@ -3164,6 +3200,15 @@
+   This function returns the current @poll. 
+ 
+ See also: @poll, doing(), @doing 
++& LPIDS()
++  lpids(<object>[,<queue type>])
++
++  Returns a space-separated list of queue process ids enqueued by <object>,
++  typically a player. If <queue type> is "w", only wait queue
++  entries are returned; if <queue type> is "s", only semaphore queue
++  entries are returned; if <queue type> is absent, both are returned.
++
++See also: @ps, getpids(), pidinfo()
+ & LPORTS()
+ & PORTS()
+   lports([<viewer>])
+@@ -3242,7 +3287,8 @@
+   Return a random number.
+   
+   The first form returns an integer between 0 and <num>-1, inclusive.
+-  The second returns an integer between <min> and <max>, inclusive.
++  The second returns an integer between <min> and <max>,
++  inclusive. Both numbers must be positive.
+ 
+   If called with an invalid argument, rand() returns an error message
+   beginning with #-1.
+@@ -3523,7 +3569,7 @@
+   This function takes no arguments, and returns the number of elapsed
+   seconds since midnight, January 1, 1970 UTC. UTC is the base time
+   zone, formerly GMT. This is a good way of synchronizing things that
+-  mustcrun at a certain time.
++  must run at a certain time.
+ & SECURE()
+   secure(<string>)
+ 
+@@ -4428,6 +4474,7 @@
+   pueblo           present if the client is in Pueblo mode.
+   telnet           present if the client understands the telnet protocol.
+   ssl              present if the client is using an SSL/TLS connection.
++  prompt_newlines  see 'help prompt_newlines'
+ 
+   Other fields may be added in the future, if, for example, MXP
+   support is ever added.
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/penntop.hlp pennmush-1.8.3p10/game/txt/hlp/penntop.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/penntop.hlp	2008-09-24 01:30:22.000000000 -0700
++++ pennmush-1.8.3p10/game/txt/hlp/penntop.hlp	2009-08-08 07:27:48.680156000 -0700
+@@ -457,10 +457,12 @@
+ See also: MONEY, money(), score
+ & CREDITS
+   Maintainer: Raevnos [SW]
+-  Developers: Javelin, Ervin Hearn III [EEH], Greg Millam [GM]
++  Developers: Ervin Hearn III [EEH], Greg Millam [GM], Mike Griffiths [MG],
++              Intrevis
+   Past Porters: Nick Gammon [NJG] (win32), Dan Williams [DW] (MacOS), 
+            Sylvia (OS/2)
+-  Former developers: Rhyanna [RLM], Trivian [TN], Halatir [LdW], Talek [TAP]
++  Former developers: Rhyanna [RLM], Trivian [TN], Halatir [LdW], Talek [TAP],
++           Javelin
+  
+   The original TinyMUSH 1.0 code was written by Lawrence Foard, and
+   was based upon James Aspnes' TinyMUD server. Since then, the code
+@@ -1665,15 +1667,15 @@
+ & SUBSTITUTIONS3
+ & %3
+   Other substitutions:
+-     %0-%9   = the contents of the REGISTERS 0-9, respectively
+-     %@ = the caller's dbref number. Initially same as %#, changes when 
+-          something like a U-FUNCTION is called.
+-     %! = the dbref number of the object the command is on (the EXECUTOR)
+-     %L = the dbref of the ENACTOR's location
+-     %c = text of the last command, _before_ evaluation
+-     %u = text of the last $command, after evaluation, available to locks
+-     %? = The current function invocation and depth counts
+-     %+ = The number of arguments passed to the current ufun.
++    %0-%9   = the contents of the REGISTERS 0-9, respectively
++    %@ = the caller's dbref number. Initially same as %#, changes when 
++         something like a U-FUNCTION is called.
++    %! = the dbref number of the object the command is on (the EXECUTOR)
++    %L = the dbref of the ENACTOR's location
++    %c = text of the last command, _before_ evaluation
++    %u = text of the last command, after evaluation, available to locks/hooks
++    %? = The current function invocation and depth counts
++    %+ = The number of arguments passed to the current ufun.
+     %qN = the equivalent of r(N), a register set by a setq() function.
+  
+ (continued in help substitutions4)
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/pennv183.hlp pennmush-1.8.3p10/game/txt/hlp/pennv183.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/pennv183.hlp	2009-03-02 12:26:35.000000000 -0800
++++ pennmush-1.8.3p10/game/txt/hlp/pennv183.hlp	2009-08-24 00:51:24.880841000 -0700
+@@ -1,4 +1,4 @@
+-& 1.8.3p9
++& 1.8.3p10
+ & changes
+ This is a list of changes in this patchlevel which are probably of
+ interest to players. More information about new commands and functions
+@@ -11,6 +11,71 @@
+ A list of the patchlevels associated with each release can
+ be read in 'help patchlevels'.
+ 
++Version 1.8.3 patchlevel 10                     Aug 24, 2009
++
++Major changes:
++ * Switched project management (Bug tracking, revision control, etc.)
++   to Google Code. See http://code.google.com/p/pennmush
++
++Minor changes:
++ * @search and lsearch() now only charge 100 pennies if an evaluating
++   search (EVAL, EPLAYER, EROOM, ETHING, EOBJECT, EEXIT or ELOCK) or
++   an exhaustive attribute search (COMMAND, LISTEN) is performed.
++ * The %u sub now works for built-in commands, as well as $-commands.
++   Useful for @hooks. [MG]
++ * The use command now understands english matching. Suggested by
++   Yuriko.
++ * Rooms can now use @open/open(). [MG]
++ * Mortals can now use '@attribute <attrib>' to see the default flags
++   of a standard attribute. [MG]
++ * @channel/priv now uses 'thing' instead of 'object' for channels
++   which allow things to join. 'object' is kept as an alias. [MG]
++ * The chatdb now saves channel buffers and mogrifier objects, so you
++   don't need to put @chan/buffer or @chan/mogrifier in @startup. [MG]
++
++Flags:
++ * The HEAR_CONNECT flag is now used (instead of MONITOR) to allow
++   players to see 'GAME: Foo has [dis]connected.' messages. MONITOR
++   on players now enables ^-patterns, the same as on things/rooms.
++   Any players with the MONITOR flag will have it replaced with the
++   HEAR_CONNECT flag automatically. Requested by Malix@8BitMUSH. [MG]
++
++Functions:
++  * lpids(), getpids(), and pidinfo() provide information about
++    wait/semaphore process ids and processes. Suggested by
++    Yuriko@M*U*S*H, code by Javelin.
++  * lalign() works like align(), but takes a single arg with a list of
++    columns, instead of one arg for each column. Suggested by Teal. [MG]
++  * New lockowner() function returns the owner of an @lock. Suggested
++    by Paige. [MG]
++
++Fixes:
++  * @pcreate without a password would crash the game. Fixed. [GM]
++  * DARK-disconnected on channels was turned into DARK-connected, on
++    disconnect. Reported by Paige@M*U*S*H, among others.
++  * MOGRIFY`BLOCK wasn't being called, as help @channel6 said it was.
++    Oops. [GM]
++  * Help fixes, by Sketch and others. [GM]
++  * @clone could mess up the names of the original and the clone. 
++    Reported by qa'toq. [SW]
++  * Crash bugs in rand() and randword(). [SW]
++  * Added --disable-zlib configure option to turn off using
++    zlib to work directly with compressed databases. Passing this to
++    configure makes the game act like pre p8 ones. [SW]
++  * member() now ignores ANSI in matches. Reported by Minion. [MG]
++  * Regexp $-commands are now ansi aware. As in: ansi is passed to %0-%9. [GM]
++  * hidden() now works on descriptors as advertised. Reported by Teal. [MG]
++  * @name could cause a crash. Fixed. Reported by Zedekiah@M*U*S*H [GM]
++  * @nscemit/silent didn't work. Reported by Paige. [MG]
++  * Win32 compile fixes and project file updates.
++  * The chatdb failed to load when objects of the wrong type were listed
++    as channel members. Reported by Teal. [MG]
++  * flags() on an attribute used as the root of a tree would include the
++    ` twice.
++  * baseconv() would hang the MUSH if passed a negative <number>. Reported
++    by Mercutio. [MG]
++
++& 1.8.3p9
+ Version 1.8.3 patchlevel 9                      Feb 28, 2009
+ 
+ Fixes:
+diff -ruNd --speed-large-files pennmush-1.8.3p9/game/txt/hlp/pennvOLD.hlp pennmush-1.8.3p10/game/txt/hlp/pennvOLD.hlp
+--- pennmush-1.8.3p9/game/txt/hlp/pennvOLD.hlp	2009-02-28 18:15:54.000000000 -0800
++++ pennmush-1.8.3p10/game/txt/hlp/pennvOLD.hlp	2009-06-01 23:18:54.175032000 -0700
+@@ -4417,7 +4417,7 @@
+ For information on a specific patchlevel of one of the versions listed,
+ type 'help <version>p<patchlevel>'. For example, 'help 1.7.2p3'
+ 
+-1.8.3: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
++1.8.3: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+ 1.8.2: 0, 1, 2, 3, 4, 5, 6, 7, 8
+ 1.8.1: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+ 1.8.0: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/SFMT.h pennmush-1.8.3p10/hdrs/SFMT.h
+--- pennmush-1.8.3p9/hdrs/SFMT.h	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/hdrs/SFMT.h	2009-07-03 17:05:29.693553000 -0700
+@@ -36,8 +36,6 @@
+ #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+ #include <inttypes.h>
+ #elif defined(_MSC_VER) || defined(__BORLANDC__)
+-typedef unsigned int uint32_t;
+-typedef unsigned __int64 uint64_t;
+ #define inline __inline
+ #else
+ #include <inttypes.h>
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/cmds.h pennmush-1.8.3p10/hdrs/cmds.h
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/extchat.h pennmush-1.8.3p10/hdrs/extchat.h
+--- pennmush-1.8.3p9/hdrs/extchat.h	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/hdrs/extchat.h	2009-08-24 00:53:12.249480000 -0700
+@@ -263,4 +263,7 @@
+ };
+ 
+ 
++/* Chat db flags */
++#define CDB_SPIFFY 0x01         /* Has mogrifier and buffer */
++
+ #endif                          /* __EXTCHAT_H */
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/funs.h pennmush-1.8.3p10/hdrs/funs.h
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/mushdb.h pennmush-1.8.3p10/hdrs/mushdb.h
+--- pennmush-1.8.3p9/hdrs/mushdb.h	2007-07-08 20:50:12.000000000 -0700
++++ pennmush-1.8.3p10/hdrs/mushdb.h	2009-07-16 12:43:04.791320000 -0700
+@@ -154,6 +154,7 @@
+ #define DBF_POWERS_LOGGED       0x80000
+ #define DBF_LABELS              0x100000
+ #define DBF_SPIFFY_AF_ANSI      0x200000
++#define DBF_HEAR_CONNECT        0x400000
+ 
+ /* Reboot DB flag macros - these should be defined whether or not the
+  * corresponding system option is defined 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/parse.h pennmush-1.8.3p10/hdrs/parse.h
+--- pennmush-1.8.3p9/hdrs/parse.h	2007-12-28 19:57:17.000000000 -0800
++++ pennmush-1.8.3p10/hdrs/parse.h	2009-06-01 23:18:54.175032000 -0700
+@@ -79,6 +79,7 @@
+ bool is_objid(char const *str);
+ bool is_integer(char const *str);
+ bool is_uinteger(char const *str);
++bool is_strict_uinteger(const char *str);
+ bool is_boolean(char const *str);
+ 
+ /* Split a sep-delimited string into individual elements */
+diff -ruNd --speed-large-files pennmush-1.8.3p9/hdrs/version.h pennmush-1.8.3p10/hdrs/version.h
+--- pennmush-1.8.3p9/hdrs/version.h	2009-02-28 18:15:54.000000000 -0800
++++ pennmush-1.8.3p10/hdrs/version.h	2009-08-24 00:51:24.880841000 -0700
+@@ -1,4 +1,4 @@
+ #define VERSION "1.8.3"
+-#define PATCHLEVEL "9"
+-#define PATCHDATE "[02/28/2008]"
+-#define NUMVERSION 1008003009
++#define PATCHLEVEL "10"
++#define PATCHDATE "[08/24/2009]"
++#define NUMVERSION 1008003010
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/atr_tab.c pennmush-1.8.3p10/src/atr_tab.c
+--- pennmush-1.8.3p9/src/atr_tab.c	2007-12-28 19:57:17.000000000 -0800
++++ pennmush-1.8.3p10/src/atr_tab.c	2009-06-26 13:04:26.330738000 -0700
+@@ -382,6 +382,7 @@
+   int nptrs = 0, i;
+ 
+   ap = (ATTR *) ptab_firstentry(&ptab_attrib);
++  ptrs[0] = "";
+   while (ap) {
+     ptrs[nptrs++] = AL_NAME(ap);
+     ap = (ATTR *) ptab_nextentry(&ptab_attrib);
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/attrib.c pennmush-1.8.3p10/src/attrib.c
+--- pennmush-1.8.3p9/src/attrib.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/attrib.c	2009-08-24 00:53:12.249480000 -0700
+@@ -1378,7 +1378,8 @@
+     parent_depth = GoodObject(Parent(thing));
+   } else {
+     flag_mask = AF_LISTEN;
+-    if (ThingInhearit(thing) || RoomInhearit(thing)) {
++    if (has_flag_by_name
++        (thing, "LISTEN_PARENT", TYPE_PLAYER | TYPE_THING | TYPE_ROOM)) {
+       parent_depth = GoodObject(Parent(thing));
+     } else {
+       parent_depth = 0;
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/bsd.c pennmush-1.8.3p10/src/bsd.c
+--- pennmush-1.8.3p9/src/bsd.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/bsd.c	2009-08-24 00:53:12.249480000 -0700
+@@ -662,9 +662,8 @@
+   shutdown_checkpoint();
+ #endif
+   WSACleanup();                 /* clean up */
+-#else
+-  exit(0);
+ #endif
++  exit(0);
+ }
+ #endif                          /* BOOLEXP_DEBUGGING */
+ 
+@@ -3144,7 +3143,7 @@
+   if (isnew) {
+     /* A brand new player created. */
+     snprintf(tbuf1, BUFFER_LEN, T("%s created."), Name(player));
+-    flag_broadcast(0, "MONITOR", "%s %s", T("GAME:"), tbuf1);
++    flag_broadcast(0, "HEAR_CONNECT", "%s %s", T("GAME:"), tbuf1);
+     if (Suspect(player))
+       flag_broadcast("WIZARD", 0, T("GAME: Suspect %s created."), Name(player));
+   }
+@@ -3165,9 +3164,10 @@
+     flag_broadcast("WIZARD", 0, T("GAME: Suspect %s"), tbuf1);
+ 
+   if (Dark(player)) {
+-    flag_broadcast("ROYALTY WIZARD", "MONITOR", "%s %s", T("GAME:"), tbuf1);
++    flag_broadcast("ROYALTY WIZARD", "HEAR_CONNECT", "%s %s", T("GAME:"),
++                   tbuf1);
+   } else
+-    flag_broadcast(0, "MONITOR", "%s %s", T("GAME:"), tbuf1);
++    flag_broadcast(0, "HEAR_CONNECT", "%s %s", T("GAME:"), tbuf1);
+ 
+   if (ANNOUNCE_CONNECTS)
+     chat_player_announce(player, message, num == 1);
+@@ -3359,7 +3359,7 @@
+   /* Redundant, but better for translators */
+   if (Dark(player)) {
+     message = (num > 1) ? T("has partially DARK-disconnected.") :
+-      T("has DARK-connected.");
++      T("has DARK-disconnected.");
+   } else if (hidden(player)) {
+     message = (num > 1) ? T("has partially HIDDEN-disconnected.") :
+       T("has HIDDEN-disconnected.");
+@@ -3382,9 +3382,10 @@
+   if (Suspect(player))
+     flag_broadcast("WIZARD", 0, T("GAME: Suspect %s"), tbuf1);
+   if (Dark(player)) {
+-    flag_broadcast("ROYALTY WIZARD", "MONITOR", "%s %s", T("GAME:"), tbuf1);
++    flag_broadcast("ROYALTY WIZARD", "HEAR_CONNECT", "%s %s", T("GAME:"),
++                   tbuf1);
+   } else
+-    flag_broadcast(0, "MONITOR", "%s %s", T("GAME:"), tbuf1);
++    flag_broadcast(0, "HEAR_CONNECT", "%s %s", T("GAME:"), tbuf1);
+ 
+   if (num < 2) {
+     clear_flag_internal(player, "CONNECTED");
+@@ -3707,6 +3708,39 @@
+   }
+ }
+ 
++#ifdef WIN32
++#pragma warning( disable : 4761)        /* Disable bogus conversion warning */
++#endif
++/* ARGSUSED */
++FUNCTION(fun_hidden)
++{
++  if (!See_All(executor)) {
++    notify(executor, T("Permission denied."));
++    safe_str("#-1", buff, bp);
++    return;
++  }
++  if (is_strict_integer(args[0])) {
++    DESC *d = lookup_desc(executor, args[0]);
++    if (!d) {
++      notify(executor, T("Couldn't find that descriptor."));
++      safe_str("#-1", buff, bp);
++      return;
++    }
++    safe_boolean(Hidden(d), buff, bp);
++  } else {
++    dbref it = match_thing(executor, args[0]);
++    if ((it == NOTHING) || (!IsPlayer(it))) {
++      notify(executor, T("Couldn't find that player."));
++      safe_str("#-1", buff, bp);
++      return;
++    }
++    safe_boolean(hidden(it), buff, bp);
++  }
++}
++
++#ifdef WIN32
++#pragma warning( default : 4761)        /* Re-enable conversion warning */
++#endif
+ 
+ /** Look up a DESC by character name or file descriptor.
+  * \param executor the dbref of the object calling the function calling this.
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/cmds.c pennmush-1.8.3p10/src/cmds.c
+--- pennmush-1.8.3p9/src/cmds.c	2009-02-24 08:51:55.000000000 -0800
++++ pennmush-1.8.3p10/src/cmds.c	2009-08-24 00:53:12.249480000 -0700
+@@ -69,14 +69,23 @@
+ 
+ COMMAND(cmd_attribute)
+ {
+-  if (SW_ISSET(sw, SWITCH_ACCESS))
+-    do_attribute_access(player, arg_left, arg_right,
+-                        SW_ISSET(sw, SWITCH_RETROACTIVE));
+-  else if (SW_ISSET(sw, SWITCH_DELETE))
+-    do_attribute_delete(player, arg_left);
+-  else if (SW_ISSET(sw, SWITCH_RENAME))
+-    do_attribute_rename(player, arg_left, arg_right);
+-  else
++  if (SW_ISSET(sw, SWITCH_ACCESS)) {
++    if (Wizard(player))
++      do_attribute_access(player, arg_left, arg_right,
++                          SW_ISSET(sw, SWITCH_RETROACTIVE));
++    else
++      notify(player, T("Permission denied."));
++  } else if (SW_ISSET(sw, SWITCH_DELETE)) {
++    if (Wizard(player))
++      do_attribute_delete(player, arg_left);
++    else
++      notify(player, T("Permission denied."));
++  } else if (SW_ISSET(sw, SWITCH_RENAME)) {
++    if (Wizard(player))
++      do_attribute_rename(player, arg_left, arg_right);
++    else
++      notify(player, T("Permission denied."));
++  } else
+     do_attribute_info(player, arg_left);
+ }
+ 
+@@ -181,11 +190,11 @@
+     {
+       int source = SW_ISSET(sw, SWITCH_SAVE) ? 2 : 1;
+       if (source == 2) {
+-	if (!God(player)) {
+-	/* Only god can alter the original config file. */
+-	  notify(player, T("You can't remake the world in your image."));
+-	  return;
+-	}     
++        if (!God(player)) {
++          /* Only god can alter the original config file. */
++          notify(player, T("You can't remake the world in your image."));
++          return;
++        }
+       }
+       if (!config_set(arg_left, arg_right, source, 0)
+           && !config_set(arg_left, arg_right, source, 1))
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/command.c pennmush-1.8.3p10/src/command.c
+--- pennmush-1.8.3p9/src/command.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/command.c	2009-08-14 20:35:13.738076000 -0700
+@@ -89,7 +89,7 @@
+   {"@ATRCHOWN", NULL, cmd_atrchown, CMD_T_ANY | CMD_T_EQSPLIT, 0, 0},
+ 
+   {"@ATTRIBUTE", "ACCESS DELETE RENAME RETROACTIVE", cmd_attribute,
+-   CMD_T_ANY | CMD_T_EQSPLIT, "WIZARD", 0},
++   CMD_T_ANY | CMD_T_EQSPLIT, 0, 0},
+   {"@BOOT", "PORT ME SILENT", cmd_boot, CMD_T_ANY, 0, 0},
+   {"@BREAK", NULL, cmd_break, CMD_T_ANY | CMD_T_EQSPLIT | CMD_T_RS_NOPARSE, 0,
+    0},
+@@ -214,7 +214,7 @@
+   {"@NEWPASSWORD", NULL, cmd_newpassword, CMD_T_ANY | CMD_T_EQSPLIT
+    | CMD_T_RS_NOPARSE, "WIZARD", 0},
+   {"@NOTIFY", "ALL ANY", cmd_notify_drain, CMD_T_ANY | CMD_T_EQSPLIT, 0, 0},
+-  {"@NSCEMIT", "NOEVAL NOISY SPOOF", cmd_cemit,
++  {"@NSCEMIT", "NOEVAL NOISY SILENT SPOOF", cmd_cemit,
+    CMD_T_ANY | CMD_T_EQSPLIT | CMD_T_NOGAGGED, "WIZARD", "CAN_NSPEMIT"},
+   {"@NSEMIT", "ROOM NOEVAL SILENT SPOOF", cmd_emit, CMD_T_ANY | CMD_T_NOGAGGED,
+    "WIZARD", "CAN_NSPEMIT"},
+@@ -1290,53 +1290,56 @@
+   }
+ 
+ 
+-  /* Finish setting up commandraw, if we may need it for hooks */
+-  if (has_hook(&cmd->hooks.ignore) || has_hook(&cmd->hooks.override)) {
+-    p = command2;
+-    if (*p && (*p == ' ')) {
+-      safe_chr(' ', commandraw, &c2);
+-      p++;
+-    }
+-    if (cmd->type & CMD_T_ARGS) {
+-      int lsa_index;
+-      if (lsa[1]) {
+-        safe_str(lsa[1], commandraw, &c2);
+-        for (lsa_index = 2; lsa[lsa_index]; lsa_index++) {
+-          safe_chr(',', commandraw, &c2);
+-          safe_str(lsa[lsa_index], commandraw, &c2);
+-        }
++  /* Finish setting up commandraw, for hooks and %u */
++  p = command2;
++  if (attrib) {
++    safe_chr('/', commandraw, &c2);
++    safe_str(swp, commandraw, &c2);
++  }
++  if (*p && (*p == ' ')) {
++    safe_chr(' ', commandraw, &c2);
++    p++;
++  }
++  if (cmd->type & CMD_T_ARGS) {
++    int lsa_index;
++    if (lsa[1]) {
++      safe_str(lsa[1], commandraw, &c2);
++      for (lsa_index = 2; lsa[lsa_index]; lsa_index++) {
++        safe_chr(',', commandraw, &c2);
++        safe_str(lsa[lsa_index], commandraw, &c2);
+       }
+-    } else {
+-      safe_str(ls, commandraw, &c2);
+     }
+-    if (cmd->type & CMD_T_EQSPLIT) {
+-      if (rhs_present) {
+-        safe_chr('=', commandraw, &c2);
+-        if (cmd->type & CMD_T_RS_ARGS) {
+-          int rsa_index;
+-          /* This is counterintuitive, but rsa[]
+-           * starts at 1. */
+-          if (rsa[1]) {
+-            safe_str(rsa[1], commandraw, &c2);
+-            for (rsa_index = 2; rsa[rsa_index]; rsa_index++) {
+-              safe_chr(',', commandraw, &c2);
+-              safe_str(rsa[rsa_index], commandraw, &c2);
+-            }
++  } else {
++    safe_str(ls, commandraw, &c2);
++  }
++  if (cmd->type & CMD_T_EQSPLIT) {
++    if (rhs_present) {
++      safe_chr('=', commandraw, &c2);
++      if (cmd->type & CMD_T_RS_ARGS) {
++        int rsa_index;
++        /* This is counterintuitive, but rsa[]
++         * starts at 1. */
++        if (rsa[1]) {
++          safe_str(rsa[1], commandraw, &c2);
++          for (rsa_index = 2; rsa[rsa_index]; rsa_index++) {
++            safe_chr(',', commandraw, &c2);
++            safe_str(rsa[rsa_index], commandraw, &c2);
+           }
+-        } else {
+-          safe_str(rs, commandraw, &c2);
+         }
++      } else {
++        safe_str(rs, commandraw, &c2);
+       }
+-#ifdef NEVER
+-      /* We used to do this, but we're not sure why */
+-      process_expression(commandraw, &c2, (const char **) &p, player, cause,
+-                         cause, noevtoken ? PE_NOTHING :
+-                         ((PE_DEFAULT & ~PE_EVALUATE) |
+-                          PE_COMMAND_BRACES), PT_DEFAULT, NULL);
+-#endif
+     }
+-    *c2 = '\0';
+   }
++#ifdef NEVER
++  /* We used to do this, but we're not sure why */
++  process_expression(commandraw, &c2, (const char **) &p, player, cause,
++                     cause, noevtoken ? PE_NOTHING :
++                     ((PE_DEFAULT & ~PE_EVALUATE) |
++                      PE_COMMAND_BRACES), PT_DEFAULT, NULL);
++#endif
++  *c2 = '\0';
++  mush_strncpy(global_eval_context.ucom, commandraw, BUFFER_LEN);
+ 
+   retval = NULL;
+   if (cmd->func == NULL) {
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/cque.c pennmush-1.8.3p10/src/cque.c
+--- pennmush-1.8.3p9/src/cque.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/cque.c	2009-08-24 00:53:12.249480000 -0700
+@@ -37,6 +37,8 @@
+ #include "game.h"
+ #include "attrib.h"
+ #include "flags.h"
++#include "function.h"
++#include "case.h"
+ #include "dbdefs.h"
+ #include "log.h"
+ #include "intmap.h"
+@@ -1068,9 +1070,168 @@
+   notify_format(player, T("Queue entry with pid %u updated."), pid);
+ }
+ 
++FUNCTION(fun_pidinfo)
++{
++  char *r, *s;
++  char *osep, osepd[2] = { ' ', '\0' };
++  char *fields, field[80] = "queue player time object attribute command";
++  uint32_t pid;
++  BQUE *q;
++  bool first = true;
++
++  if (!is_uinteger(args[0])) {
++    safe_str(T(e_num), buff, bp);
++    return;
++  }
++
++  pid = parse_uint32(args[0], NULL, 10);
++  q = im_find(queue_map, pid);
++
++  if (!q) {
++    safe_str(T("#-1 INVALID PID"), buff, bp);
++    return;
++  }
++
++  if (!controls(executor, q->player) && !LookQueue(executor)) {
++    safe_str(T(e_perm), buff, bp);
++    return;
++  }
++
++  if ((nargs > 1) && args[1] && *args[1]) {
++    fields = args[1];
++  } else {
++    fields = field;
++  }
++
++  if (nargs == 3)
++    osep = args[2];
++  else {
++    osep = osepd;
++  }
++
++  s = trim_space_sep(fields, ' ');
++  do {
++    r = split_token(&s, ' ');
++    if (string_prefix("queue", r)) {
++      if (!first)
++        safe_str(osep, buff, bp);
++      first = false;
++      if (GoodObject(q->sem))
++        safe_str("semaphore", buff, bp);
++      else
++        safe_str("wait", buff, bp);
++    } else if (string_prefix("player", r)) {
++      if (!first)
++        safe_str(osep, buff, bp);
++      first = false;
++      safe_dbref(q->player, buff, bp);
++    } else if (string_prefix("time", r)) {
++      if (!first)
++        safe_str(osep, buff, bp);
++      first = false;
++      if (q->left == 0)
++        safe_integer(-1, buff, bp);
++      else
++        safe_integer(difftime(q->left, mudtime), buff, bp);
++    } else if (string_prefix("object", r)) {
++      if (!first)
++        safe_str(osep, buff, bp);
++      first = false;
++      safe_dbref(q->sem, buff, bp);
++    } else if (string_prefix("attribute", r)) {
++      if (!first)
++        safe_str(osep, buff, bp);
++      first = false;
++      if (GoodObject(q->sem)) {
++        safe_str(q->semattr, buff, bp);
++      } else {
++        safe_dbref(NOTHING, buff, bp);
++      }
++    } else if (string_prefix("command", r)) {
++      if (!first)
++        safe_str(osep, buff, bp);
++      first = false;
++      safe_str(q->comm, buff, bp);
++    }
++  } while (s);
++}
++
++FUNCTION(fun_lpids)
++{
++  /* Can be called as LPIDS or GETPIDS */
++  BQUE *tmp;
++  int qmask = 3;
++  dbref thing = -1;
++  dbref player = -1;
++  char *attr = NULL;
++  bool first = true;
++  if (string_prefix(called_as, "LPIDS")) {
++    /* lpids(player[,type]) */
++    if (args[0] && *args[0]) {
++      player = match_thing(executor, args[0]);
++      if (!GoodObject(player)) {
++        safe_str(T(e_notvis), buff, bp);
++        return;
++      }
++      if (!(LookQueue(executor) || (Owner(player) == executor))) {
++        safe_str(T(e_perm), buff, bp);
++        return;
++      }
++    } else if (!LookQueue(executor)) {
++      player = executor;
++    }
++    if ((nargs == 2) && args[1] && *args[1]) {
++      if (*args[1] == 'W' || *args[1] == 'w')
++        qmask = 1;
++      else if (*args[1] == 'S' || *args[1] == 's')
++        qmask = 2;
++    }
++  } else {
++    /* getpids(obj[/attrib]) */
++    qmask = 2;                  /* semaphores only */
++    attr = strchr(args[0], '/');
++    if (attr)
++      *attr++ = '\0';
++    thing = match_thing(executor, args[0]);
++    if (!GoodObject(thing)) {
++      safe_str(T(e_notvis), buff, bp);
++      return;
++    }
++    if (!(LookQueue(executor) || (controls(executor, thing)))) {
++      safe_str(T(e_perm), buff, bp);
++      return;
++    }
++  }
++
++  if (qmask & 1) {
++    for (tmp = qwait; tmp; tmp = tmp->next) {
++      if (GoodObject(player) && (!Owns(tmp->player, player)))
++        continue;
++      if (!first)
++        safe_chr(' ', buff, bp);
++      safe_integer(tmp->pid, buff, bp);
++      first = false;
++    }
++  }
++  if (qmask & 2) {
++    for (tmp = qsemfirst; tmp; tmp = tmp->next) {
++      if (GoodObject(player) && (!Owns(tmp->player, player)))
++        continue;
++      if (GoodObject(thing) && (tmp->sem != thing))
++        continue;
++      if (attr && *attr && strcasecmp(tmp->semattr, attr))
++        continue;
++      if (!first)
++        safe_chr(' ', buff, bp);
++      safe_integer(tmp->pid, buff, bp);
++      first = false;
++    }
++  }
++}
++
+ static void
+-show_queue(dbref player, dbref victim, int q_type, int q_quiet, int q_all,
+-           BQUE *q_ptr, int *tot, int *self, int *del)
++show_queue(dbref player, dbref victim, int q_type, int q_quiet,
++           int q_all, BQUE *q_ptr, int *tot, int *self, int *del)
+ {
+   BQUE *tmp;
+   for (tmp = q_ptr; tmp; tmp = tmp->next) {
+@@ -1251,7 +1412,6 @@
+   }
+ 
+   add_to(QUEUE_PER_OWNER ? Owner(player) : player, num);
+-
+   if (ncom && *ncom) {
+     int j;
+     for (j = 0; j < 10; j++)
+@@ -1307,8 +1467,7 @@
+       if (Owner(victim) != player) {
+         notify_format(player, "%s: %s's %s(%s)", T("Halted"),
+                       Name(Owner(victim)), Name(victim), unparse_dbref(victim));
+-        notify_format(Owner(victim),
+-                      "%s: %s(%s), by %s", T("Halted"),
++        notify_format(Owner(victim), "%s: %s(%s), by %s", T("Halted"),
+                       Name(victim), unparse_dbref(victim), Name(player));
+       }
+       if (*arg2 == '\0')
+@@ -1327,16 +1486,13 @@
+   uint32_t pid;
+   BQUE *q;
+   dbref victim;
+-
+   if (!is_uinteger(arg1)) {
+     notify(player, T("That is not a valid pid!"));
+     return;
+   }
+ 
+   pid = parse_uint32(arg1, NULL, 10);
+-
+   q = im_find(queue_map, pid);
+-
+   if (!q) {
+     notify(player, T("That is not a valid pid!"));
+     return;
+@@ -1353,20 +1509,16 @@
+      turn comes up (Or show it in @ps, etc.).  Exception is for
+      semaphores, which otherwise might wait forever. */
+   q->player = NOTHING;
+-
+   if (q->semattr) {
+     BQUE *last = NULL, *tmp;
+-
+     for (tmp = qsemfirst; tmp; last = tmp, tmp = tmp->next) {
+       if (tmp == q) {
+         if (last)
+           last->next = tmp->next;
+         else
+           qsemfirst = tmp->next;
+-
+         if (qsemlast == tmp)
+           qsemlast = last;
+-
+         break;
+       }
+     }
+@@ -1412,7 +1564,6 @@
+ do_allrestart(dbref player)
+ {
+   dbref thing;
+-
+   if (!HaltAny(player)) {
+     notify(player, T("You do not have the power to restart the world."));
+     return;
+@@ -1425,7 +1576,8 @@
+     }
+     if (IsPlayer(thing)) {
+       notify_format(thing,
+-                    T("Your objects are being globally restarted by %s"),
++                    T
++                    ("Your objects are being globally restarted by %s"),
+                     Name(player));
+     }
+   }
+@@ -1435,7 +1587,6 @@
+ do_raw_restart(dbref victim)
+ {
+   dbref thing;
+-
+   if (IsPlayer(victim)) {
+     for (thing = 0; thing < db_top; thing++) {
+       if ((Owner(thing) == victim) && !IsGarbage(thing)
+@@ -1474,14 +1625,14 @@
+                       T("All objects for %s are being restarted."),
+                       Name(victim));
+         notify_format(victim,
+-                      T("All of your objects are being restarted by %s."),
++                      T
++                      ("All of your objects are being restarted by %s."),
+                       Name(player));
+       } else {
+         notify_format(player,
+                       "Restarting: %s's %s(%s)",
+                       Name(Owner(victim)), Name(victim), unparse_dbref(victim));
+-        notify_format(Owner(victim),
+-                      "Restarting: %s(%s), by %s",
++        notify_format(Owner(victim), "Restarting: %s(%s), by %s",
+                       Name(victim), unparse_dbref(victim), Name(player));
+       }
+     } else {
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/create.c pennmush-1.8.3p10/src/create.c
+--- pennmush-1.8.3p9/src/create.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/create.c	2009-08-24 00:53:12.249480000 -0700
+@@ -89,7 +89,9 @@
+ {
+   dbref loc =
+     (pseudo !=
+-     NOTHING) ? pseudo : (IsExit(player) ? Source(player) : Location(player));
++     NOTHING) ? pseudo : (IsExit(player) ? Source(player) : (IsRoom(player) ?
++                                                             player :
++                                                             Location(player)));
+   dbref new_exit;
+   if (!command_check_byname(player, "@dig")) {
+     notify(player, "Permission denied.");
+@@ -508,8 +510,10 @@
+ 
+   clone = new_object();
+ 
++  /* Need to figure out why this is here. */
+   memcpy(REFDB(clone), REFDB(thing), sizeof(struct object));
+   Owner(clone) = Owner(player);
++  Name(clone) = NULL;
+   if (newname && *newname)
+     set_name(clone, newname);
+   else
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/db.c pennmush-1.8.3p10/src/db.c
+--- pennmush-1.8.3p9/src/db.c	2009-02-28 18:10:42.000000000 -0800
++++ pennmush-1.8.3p10/src/db.c	2009-08-24 00:53:12.249480000 -0700
+@@ -719,6 +719,7 @@
+   dbflag += DBF_POWERS_LOGGED;
+   dbflag += DBF_LABELS;
+   dbflag += DBF_SPIFFY_AF_ANSI;
++  dbflag += DBF_HEAR_CONNECT;
+ 
+   penn_fprintf(f, "+V%d\n", dbflag * 256 + 2);
+ 
+@@ -914,6 +915,7 @@
+   dbflag += DBF_POWERS_LOGGED;
+   dbflag += DBF_LABELS;
+   dbflag += DBF_SPIFFY_AF_ANSI;
++  dbflag += DBF_HEAR_CONNECT;
+ 
+   do_rawlog(LT_CHECK, "PARANOID WRITE BEGINNING...\n");
+ 
+@@ -1507,6 +1509,12 @@
+       if (IsPlayer(i)) {
+         add_player(i);
+         clear_flag_internal(i, "CONNECTED");
++        /* If it has the MONITOR flag and the db predates HEAR_CONNECT, swap them over */
++        if (!(globals.indb_flags & DBF_HEAR_CONNECT) &&
++            has_flag_by_name(i, "MONITOR", NOTYPE)) {
++          clear_flag_internal(i, "MONITOR");
++          set_flag_internal(i, "HEAR_CONNECT");
++        }
+       }
+       break;
+ 
+@@ -1773,6 +1781,12 @@
+         if (IsPlayer(i)) {
+           add_player(i);
+           clear_flag_internal(i, "CONNECTED");
++          /* If it has the MONITOR flag and the db predates HEAR_CONNECT, swap them over */
++          if (!(globals.indb_flags & DBF_HEAR_CONNECT) &&
++              has_flag_by_name(i, "MONITOR", NOTYPE)) {
++            clear_flag_internal(i, "MONITOR");
++            set_flag_internal(i, "HEAR_CONNECT");
++          }
+         }
+       }
+       break;
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/extchat.c pennmush-1.8.3p10/src/extchat.c
+--- pennmush-1.8.3p9/src/extchat.c	2009-02-24 17:11:01.000000000 -0800
++++ pennmush-1.8.3p10/src/extchat.c	2009-08-16 19:07:59.804942000 -0700
+@@ -46,7 +46,7 @@
+ static int load_chatdb_oldstyle(PENNFILE *fp);
+ static int load_channel(PENNFILE *fp, CHAN *ch);
+ static int load_chanusers(PENNFILE *fp, CHAN *ch);
+-static int load_labeled_channel(PENNFILE *fp, CHAN *ch);
++static int load_labeled_channel(PENNFILE *fp, CHAN *ch, int dbflags);
+ static int load_labeled_chanusers(PENNFILE *fp, CHAN *ch);
+ static void insert_channel(CHAN **ch);
+ static void remove_channel(CHAN *ch);
+@@ -109,6 +109,7 @@
+   {"Admin", 'A', CHANNEL_ADMIN | CHANNEL_PLAYER, CHANNEL_ADMIN},
+   {"Wizard", 'W', CHANNEL_WIZARD | CHANNEL_PLAYER, CHANNEL_WIZARD},
+   {"Player", 'P', CHANNEL_PLAYER, CHANNEL_PLAYER},
++  {"Thing", 'T', CHANNEL_OBJECT, CHANNEL_OBJECT},
+   {"Object", 'O', CHANNEL_OBJECT, CHANNEL_OBJECT},
+   {"Quiet", 'Q', CHANNEL_QUIET, CHANNEL_QUIET},
+   {"Open", 'o', CHANNEL_OPEN, CHANNEL_OPEN},
+@@ -302,7 +303,7 @@
+     ch = new_channel();
+     if (!ch)
+       return 0;
+-    if (!load_labeled_channel(fp, ch)) {
++    if (!load_labeled_channel(fp, ch, flags)) {
+       do_rawlog(LT_ERR, T("Unable to load channel %d."), i);
+       free_channel(ch);
+       return 0;
+@@ -429,7 +430,7 @@
+  * successful, 0 otherwise.
+  */
+ static int
+-load_labeled_channel(PENNFILE *fp, CHAN *ch)
++load_labeled_channel(PENNFILE *fp, CHAN *ch, int dbflags)
+ {
+   char *tmp;
+   int i;
+@@ -446,6 +447,13 @@
+   ChanCreator(ch) = d;
+   db_read_this_labeled_int(fp, "cost", &i);
+   ChanCost(ch) = i;
++  if (dbflags & CDB_SPIFFY) {
++    db_read_this_labeled_int(fp, "buffer", &i);
++    if (i)
++      ChanBufferQ(ch) = allocate_bufferq(i);
++    db_read_this_labeled_dbref(fp, "mogrifier", &d);
++    ChanMogrifier(ch) = d;
++  }
+   ChanNumMsgs(ch) = 0;
+   while (1) {
+     db_read_labeled_string(fp, &label, &value);
+@@ -523,7 +531,7 @@
+       /* But be sure to read (and discard) the player's info */
+       do_log(LT_ERR, 0, 0, T("Bad object #%d removed from channel %s"),
+              player, ChanName(ch));
+-      db_read_this_labeled_int(fp, "type", &n);
++      db_read_this_labeled_int(fp, "flags", &n);
+       db_read_this_labeled_string(fp, "title", &tmp);
+       ChanNumUsers(ch) -= 1;
+     }
+@@ -790,6 +798,7 @@
+ {
+   CHAN *ch;
+   int default_flags = 0;
++  default_flags += CDB_SPIFFY;
+ 
+   /* How many channels? */
+   penn_fprintf(fp, "+V%d\n", default_flags);
+@@ -814,6 +823,8 @@
+   db_write_labeled_int(fp, "  flags", ChanType(ch));
+   db_write_labeled_dbref(fp, "  creator", ChanCreator(ch));
+   db_write_labeled_int(fp, "  cost", ChanCost(ch));
++  db_write_labeled_int(fp, "  buffer", bufferq_blocks(ChanBufferQ(ch)));
++  db_write_labeled_dbref(fp, "  mogrifier", ChanMogrifier(ch));
+   db_write_labeled_string(fp, "  lock", "join");
+   putboolexp(fp, ChanJoinLock(ch));
+   db_write_labeled_string(fp, "  lock", "speak");
+@@ -2110,7 +2121,7 @@
+                     ChanName(c), blanks, numusers, ChanNumMsgs(c),
+                     Channel_Disabled(c) ? 'D' : '-',
+                     Channel_Player(c) ? 'P' : '-',
+-                    Channel_Object(c) ? 'O' : '-',
++                    Channel_Object(c) ? 'T' : '-',
+                     Channel_Admin(c) ? 'A' : (Channel_Wizard(c) ? 'W' : '-'),
+                     Channel_Quiet(c) ? 'Q' : '-',
+                     Channel_CanHide(c) ? 'H' : '-', Channel_Open(c) ? 'o' : '-',
+@@ -2480,12 +2491,11 @@
+ 
+ /** Change the mogrifier of a channel.
+  * \verbatim
+- * This is the top-level function for @channel/mogrifier, which changes
+- * ownership of a channel.
++ * This is the top-level function for @channel/mogrifier
+  * \endverbatim
+  * \param player the enactor.
+  * \param name name of the channel.
+- * \param newobj name of the new owner for the channel.
++ * \param newobj name of the new mogrifier object.
+  */
+ void
+ do_chan_set_mogrifier(dbref player, const char *name, const char *newobj)
+@@ -2497,7 +2507,7 @@
+ 
+   /* Only a channel modifier can do this. */
+   if (!Chan_Can_Modify(c, player)) {
+-    notify(player, T("CHAT: Only a channel modifier can do hat."));
++    notify(player, T("CHAT: Only a channel modifier can do that."));
+     return;
+   }
+ 
+@@ -2522,16 +2532,11 @@
+     return;
+   }
+ 
+-  /* The owner of the channel must be able to *control* the
+-   * mogrifier.
+-   */
++  /* The player must be able to *control* the mogrifier. */
+   if (!controls(player, it)) {
+     notify(player, T("CHAT: You must control the mogrifier."));
+     return;
+   }
+-  /* We refund the original owner's money, but don't charge the
+-   * new owner. 
+-   */
+   ChanMogrifier(c) = it;
+   notify_format(player,
+                 T("CHAT: Channel <%s> now mogrified by %s."), ChanName(c),
+@@ -3430,9 +3435,9 @@
+         dbref player, int numargs, char *argv[], char *orig)
+ {
+   static char buff[BUFFER_LEN];
+-  buff[0] = '\0';
+   const char *wenv[10];
+   int i;
++  buff[0] = '\0';
+   memset(wenv, 0, sizeof(wenv));
+   for (i = 0; i < numargs; i++) {
+     wenv[i] = argv[i];
+@@ -3483,9 +3488,8 @@
+   dbref mogrifier = NOTHING;
+   char *ctype = NULL;
+   char *argv[10];
+-  memset(argv, 0, sizeof(argv));
+-
+   int override_chatformat = 0;
++  memset(argv, 0, sizeof(argv));
+ 
+   /* Make sure we can write to the channel before doing anything */
+   if (Channel_Disabled(channel))
+@@ -3537,7 +3541,8 @@
+       argv[3] = playername;
+       argv[4] = title;
+ 
+-      if (*blockstr) {
++      blockstr = mogrify(mogrifier, "MOGRIFY`BLOCK", player, 6, argv, "");
++      if (blockstr && *blockstr) {
+         notify(player, blockstr);
+         return;
+       }
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/flags.c pennmush-1.8.3p10/src/flags.c
+--- pennmush-1.8.3p9/src/flags.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/flags.c	2009-08-24 00:53:12.249480000 -0700
+@@ -873,6 +873,9 @@
+     add_flag("HEAVY", '\0', NOTYPE, F_ROYAL, F_ANY);
+     add_flag("TRACK_MONEY", '\0', TYPE_PLAYER, F_ANY, F_ANY);
+     add_flag("LOUD", '\0', NOTYPE, F_ROYAL, F_ANY);
++    add_flag("HEAR_CONNECT", '\0', TYPE_PLAYER, F_ROYAL, F_ANY);
++    if ((f = match_flag("LISTEN_PARENT")))
++      f->type |= TYPE_PLAYER;
+     if ((f = match_flag("TERSE")))
+       f->type |= TYPE_THING;
+     if ((f = match_flag("PUPPET")))
+@@ -1372,9 +1375,7 @@
+     else
+       return 1;
+   }
+-  /* You must be privileged to set/clear the MONITOR flag on a player */
+-  if (IsPlayer(thing) && is_flag(flagp, "MONITOR") && !Hasprivs(player))
+-    return 0;
++
+   /* Checking for the ZONE flag. If you set this, the player had
+    * better be zone-locked! 
+    */
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/function.c pennmush-1.8.3p10/src/function.c
+--- pennmush-1.8.3p9/src/function.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/function.c	2009-08-17 21:49:08.287262000 -0700
+@@ -316,6 +316,7 @@
+   {"AFTER", fun_after, 2, 2, FN_REG},
+   {"ALIAS", fun_alias, 1, 2, FN_REG},
+   {"ALIGN", fun_align, 2, INT_MAX, FN_REG},
++  {"LALIGN", fun_align, 2, 6, FN_REG},
+   {"ALLOF", fun_allof, 2, INT_MAX, FN_NOPARSE},
+   {"ALPHAMAX", fun_alphamax, 1, INT_MAX, FN_REG},
+   {"ALPHAMIN", fun_alphamin, 1, INT_MAX, FN_REG},
+@@ -429,6 +430,7 @@
+   {"FULLALIAS", fun_fullalias, 1, 1, FN_REG},
+   {"FULLNAME", fun_fullname, 1, 1, FN_REG},
+   {"GET", fun_get, 1, 1, FN_REG},
++  {"GETPIDS", fun_lpids, 1, 1, FN_REG},
+   {"GET_EVAL", fun_get_eval, 1, 1, FN_REG},
+   {"GRAB", fun_grab, 2, 3, FN_REG},
+   {"GRABALL", fun_graball, 2, 4, FN_REG},
+@@ -493,8 +495,10 @@
+   {"LOCATE", fun_locate, 3, 3, FN_REG},
+   {"LOCK", fun_lock, 1, 2, FN_REG},
+   {"LOCKFLAGS", fun_lockflags, 0, 1, FN_REG},
++  {"LOCKOWNER", fun_lockowner, 1, 1, FN_REG},
+   {"LOCKS", fun_locks, 1, 1, FN_REG},
+   {"LPARENT", fun_lparent, 1, 1, FN_REG},
++  {"LPIDS", fun_lpids, 0, 2, FN_REG},
+   {"LPLAYERS", fun_dbwalker, 1, 1, FN_REG},
+   {"LPORTS", fun_lports, 0, 1, FN_REG},
+   {"LPOS", fun_lpos, 2, 2, FN_REG},
+@@ -598,6 +602,7 @@
+   {"PARENT", fun_parent, 1, 2, FN_REG},
+   {"PCREATE", fun_pcreate, 2, 3, FN_REG},
+   {"PEMIT", fun_pemit, 2, -2, FN_REG},
++  {"PIDINFO", fun_pidinfo, 1, 3, FN_REG},
+   {"PLAYERMEM", fun_playermem, 1, 1, FN_REG},
+   {"PLAYER", fun_player, 1, 1, FN_REG},
+   {"PMATCH", fun_pmatch, 1, 1, FN_REG},
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/fundb.c pennmush-1.8.3p10/src/fundb.c
+--- pennmush-1.8.3p9/src/fundb.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/fundb.c	2009-08-24 00:53:12.249480000 -0700
+@@ -43,6 +43,7 @@
+ 
+ 
+ 
++
+ dbwalk(char *buff, char **bp, dbref executor, dbref enactor,
+        int type, dbref loc, dbref after, int skipdark,
+        int start, int count, int *retcount);
+@@ -502,8 +503,6 @@
+       return;
+     }
+     safe_str(privs_to_letters(attr_privs_view, AL_FLAGS(a)), buff, bp);
+-    if (atr_sub_branch(a))
+-      safe_chr('`', buff, bp);
+   } else {
+     /* Object flags, visible to all */
+     safe_str(unparse_flags(thing, executor), buff, bp);
+@@ -1272,6 +1271,35 @@
+ }
+ 
+ /* ARGSUSED */
++FUNCTION(fun_lockowner)
++{
++  dbref it;
++  char *p;
++  lock_type ltype;
++  lock_list *ll;
++
++  if ((p = strchr(args[0], '/')))
++    *(p++) = '\0';
++
++  it = match_thing(executor, args[0]);
++  if (!GoodObject(it)) {
++    safe_str(T(e_notvis), buff, bp);
++    return;
++  }
++  ltype = get_locktype(p);
++  if (ltype == NULL || !Can_Read_Lock(executor, it, ltype)) {
++    safe_str(T("#-1 NO SUCH LOCK"), buff, bp);
++    return;
++  }
++  ll = getlockstruct(it, ltype);
++  if (ll)
++    safe_dbref(L_CREATOR(ll), buff, bp);
++  else
++    safe_str(T("#-1 NO SUCH LOCK"), buff, bp);
++
++}
++
++/* ARGSUSED */
+ FUNCTION(fun_lset)
+ {
+   if (!FUNCTION_SIDE_EFFECTS) {
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/funlist.c pennmush-1.8.3p10/src/funlist.c
+--- pennmush-1.8.3p9/src/funlist.c	2009-02-28 18:57:45.000000000 -0800
++++ pennmush-1.8.3p10/src/funlist.c	2009-08-24 00:53:12.249480000 -0700
+@@ -1357,6 +1357,14 @@
+ 
+   s = trim_space_sep(args[0], sep);
+   word_count = do_wordcount(s, sep);
++
++  if (word_count == 0)
++    return;
++  else if (word_count == 1) {
++    safe_strl(args[0], arglens[0], buff, bp);
++    return;
++  }
++
+   word_index = get_random32(0, word_count - 1);
+ 
+   /* Go to the start of the token we're interested in. */
+@@ -2030,6 +2038,7 @@
+   char *s, *t;
+   char sep;
+   int el;
++  char needle[BUFFER_LEN], haystack[BUFFER_LEN];
+ 
+   if (!delim_check(buff, bp, nargs, args, 3, &sep))
+     return;
+@@ -2038,12 +2047,16 @@
+     safe_str(T("#-1 CAN ONLY TEST ONE ELEMENT"), buff, bp);
+     return;
+   }
+-  s = trim_space_sep(args[0], sep);
++
++  strncpy(haystack, remove_markup(args[0], NULL), BUFFER_LEN);
++  strncpy(needle, remove_markup(args[1], NULL), BUFFER_LEN);
++
++  s = trim_space_sep(haystack, sep);
+   el = 1;
+ 
+   do {
+     t = split_token(&s, sep);
+-    if (!strcmp(args[1], t)) {
++    if (!strcmp(needle, t)) {
+       safe_integer(el, buff, bp);
+       return;
+     }
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/funmath.c pennmush-1.8.3p10/src/funmath.c
+--- pennmush-1.8.3p9/src/funmath.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/funmath.c	2009-08-16 23:14:54.843402000 -0700
+@@ -1919,6 +1919,7 @@
+   while (ptr && *ptr) {
+     if (*ptr == '-') {
+       isnegative = 1;
++      ptr++;
+       continue;
+     }
+     n *= from;
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/funmisc.c pennmush-1.8.3p10/src/funmisc.c
+--- pennmush-1.8.3p9/src/funmisc.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/funmisc.c	2009-06-01 23:18:54.175032000 -0700
+@@ -311,25 +311,26 @@
+ /* ARGSUSED */
+ FUNCTION(fun_rand)
+ {
+-  /*
+-   * Uses Sh'dow's random number generator, found in utils.c.  Better
+-   * distribution than original, w/ minimal speed losses.
+-   */
+-  int low, high;
+-  if (!is_integer(args[0])) {
+-    safe_str(T(e_int), buff, bp);
++  uint32_t low, high;
++  if (!is_strict_uinteger(args[0])) {
++    safe_str(T(e_uint), buff, bp);
+     return;
+   }
+   if (nargs == 1) {
+     low = 0;
+-    high = parse_integer(args[0]) - 1;
++    high = parse_uinteger(args[0]);
++    if (high == 0) {
++      safe_str(T(e_range), buff, bp);
++      return;
++    }
++    high -= 1;
+   } else {
+-    if (!is_integer(args[1])) {
+-      safe_str(T(e_ints), buff, bp);
++    if (!is_strict_uinteger(args[1])) {
++      safe_str(T(e_uints), buff, bp);
+       return;
+     }
+-    low = parse_integer(args[0]);
+-    high = parse_integer(args[1]);
++    low = parse_uinteger(args[0]);
++    high = parse_uinteger(args[1]);
+   }
+ 
+   if (low > high) {
+@@ -337,7 +338,7 @@
+     return;
+   }
+ 
+-  safe_integer(get_random32(low, high), buff, bp);
++  safe_uinteger(get_random32(low, high), buff, bp);
+ }
+ 
+ /* ARGSUSED */
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/funstr.c pennmush-1.8.3p10/src/funstr.c
+--- pennmush-1.8.3p9/src/funstr.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/funstr.c	2009-08-24 00:53:12.249480000 -0700
+@@ -1868,7 +1868,6 @@
+   return 1;
+ }
+ 
+-
+ FUNCTION(fun_align)
+ {
+   int nline;
+@@ -1956,35 +1955,71 @@
+     safe_str(T("#-1 TOO MANY COLUMNS FOR ALIGN"), buff, bp);
+     return;
+   }
+-  if (nargs < (ncols + 1) || nargs > (ncols + 4)) {
+-    safe_str(T("#-1 INVALID NUMBER OF ARGUMENTS TO ALIGN"), buff, bp);
+-    return;
+-  }
+-  if (nargs >= (ncols + 2)) {
+-    if (!args[ncols + 1] || strlen(args[ncols + 1]) > 1) {
+-      safe_str(T("#-1 FILLER MUST BE ONE CHARACTER"), buff, bp);
++  if (strcmp(called_as, "LALIGN")) {
++    /* each column is a separate arg */
++    if (nargs < (ncols + 1) || nargs > (ncols + 4)) {
++      safe_str(T("#-1 INVALID NUMBER OF ARGUMENTS TO ALIGN"), buff, bp);
+       return;
+     }
+-    if (*args[ncols + 1]) {
+-      filler = *(args[ncols + 1]);
++    if (nargs >= (ncols + 2)) {
++      if (!args[ncols + 1] || strlen(args[ncols + 1]) > 1) {
++        safe_str(T("#-1 FILLER MUST BE ONE CHARACTER"), buff, bp);
++        return;
++      }
++      if (*args[ncols + 1]) {
++        filler = *(args[ncols + 1]);
++      }
++    }
++    if (nargs >= (ncols + 3)) {
++      fieldsep = args[ncols + 2];
++    }
++    if (nargs >= (ncols + 4)) {
++      linesep = args[ncols + 3];
+     }
+-  }
+-  if (nargs >= (ncols + 3)) {
+-    fieldsep = args[ncols + 2];
+-  }
+-  if (nargs >= (ncols + 4)) {
+-    linesep = args[ncols + 3];
+-  }
+ 
+-  fslen = strlen(fieldsep);
+-  lslen = strlen(linesep);
++    fslen = strlen(fieldsep);
++    lslen = strlen(linesep);
+ 
+-  for (i = 0; i < MAX_COLS; i++) {
+-    as[i] = NULL;
+-  }
+-  for (i = 0; i < ncols; i++) {
+-    as[i] = parse_ansi_string(args[i + 1]);
+-    ptrs[i] = as[i]->text;
++    for (i = 0; i < MAX_COLS; i++) {
++      as[i] = NULL;
++    }
++    for (i = 0; i < ncols; i++) {
++      as[i] = parse_ansi_string(args[i + 1]);
++      ptrs[i] = as[i]->text;
++    }
++  } else {
++    /* columns are in args[1] as an args[2]-separated list */
++    char delim, *s;
++    if (!delim_check(buff, bp, nargs, args, 3, &delim))
++      return;
++    if (do_wordcount(args[1], delim) != ncols) {
++      safe_str(T("#-1 INVALID NUMBER OF ARGUMENTS TO ALIGN"), buff, bp);
++      return;
++    }
++    if (nargs > 3) {
++      if (!args[3] || strlen(args[3]) > 1) {
++        safe_str(T("#-1 FILLER MUST BE ONE CHARACTER"), buff, bp);
++        return;
++      }
++      if (*args[3])
++        filler = *(args[3]);
++    }
++    if (nargs > 4)
++      fieldsep = args[4];
++    if (nargs > 5)
++      linesep = args[5];
++
++    fslen = strlen(fieldsep);
++    lslen = strlen(linesep);
++
++    for (i = 0; i < MAX_COLS; i++) {
++      as[i] = NULL;
++    }
++    s = trim_space_sep(args[1], delim);
++    for (i = 0; i < ncols; i++) {
++      as[i] = parse_ansi_string(split_token(&s, delim));
++      ptrs[i] = as[i]->text;
++    }
+   }
+ 
+   nline = 0;
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/game.c pennmush-1.8.3p10/src/game.c
+--- pennmush-1.8.3p9/src/game.c	2009-02-27 15:39:18.000000000 -0800
++++ pennmush-1.8.3p10/src/game.c	2009-08-24 00:53:12.249480000 -0700
+@@ -829,7 +829,7 @@
+       create_minimal_db();
+       return 0;
+     }
+-    
++
+     penn_ungetc(c, f);
+   }
+ 
+@@ -1136,8 +1136,8 @@
+   strcpy(unp, command);
+ 
+   cptr = command_parse(player, cause, command, from_port);
+-  strcpy(global_eval_context.ucom, (cptr ? cptr : ""));
+   if (cptr) {
++    mush_strncpy(global_eval_context.ucom, cptr, BUFFER_LEN);
+     a = 0;
+     if (!Gagged(player)) {
+ 
+@@ -1452,7 +1452,7 @@
+   /* If a monitor flag is set on a room or thing, it's a listener.
+    * Otherwise not (even if ^patterns are present)
+    */
+-  return (ThingListen(thing) || RoomListen(thing));
++  return has_flag_by_name(thing, "MONITOR", NOTYPE);
+ }
+ 
+ /** Reset all players' money.
+@@ -2214,7 +2214,8 @@
+     pf->type = PFT_GZFILE;
+     pf->handle.g = gzopen(filename, "rb");
+     if (!pf->handle.g) {
+-      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename, strerror(errno));
++      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename,
++                strerror(errno));
+       mush_free(pf, "pennfile");
+       longjmp(db_err, 1);
+     }
+@@ -2302,7 +2303,8 @@
+     pf->type = PFT_GZFILE;
+     pf->handle.g = gzopen(filename, "wb");
+     if (!pf->handle.g) {
+-      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename, strerror(errno));
++      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename,
++                strerror(errno));
+       mush_free(pf, "pennfile");
+       longjmp(db_err, 1);
+     }
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/markup.c pennmush-1.8.3p10/src/markup.c
+--- pennmush-1.8.3p9/src/markup.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/markup.c	2009-06-19 16:35:18.280274000 -0700
+@@ -2103,6 +2103,7 @@
+  * \param ovector the offset vectors
+  * \param stringcount the number of subpatterns
+  * \param stringnumber the number of the desired subpattern
++ * \param nonempty if true, copy empty registers as well.
+  * \param buff buffer to copy the subpattern to
+  * \param bp pointer to the end of buffer
+  * \return size of subpattern, or -1 if unknown pattern
+@@ -2131,6 +2132,7 @@
+  * \param ovector the offset vectors
+  * \param stringcount the number of subpatterns
+  * \param stringname the name of the desired subpattern
++ * \param nonempty if true, copy empty registers as well.
+  * \param buff buffer to copy the subpattern to
+  * \param bp pointer to the end of buffer
+  * \return size of subpattern, or -1 if unknown pattern
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/mysocket.c pennmush-1.8.3p10/src/mysocket.c
+--- pennmush-1.8.3p9/src/mysocket.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/mysocket.c	2009-07-03 17:05:29.693553000 -0700
+@@ -319,7 +319,11 @@
+     if (bind(s, server->ai_addr, server->ai_addrlen) == 0)
+       break;                    /* Success */
+ 
++#ifdef WIN32
++    if (WSAGetLastError() == WSAEADDRINUSE) {
++#else
+     if (errno == EADDRINUSE) {
++#endif
+       fprintf(stderr,
+               "Another process (Possibly another copy of this mush?) appears to be using port %hu. Aborting.\n",
+               port);
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/notify.c pennmush-1.8.3p10/src/notify.c
+--- pennmush-1.8.3p9/src/notify.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/notify.c	2009-07-16 12:43:04.791320000 -0700
+@@ -950,7 +950,7 @@
+      *    * unlike normal @listen, don't pass the message on.
+      *    */
+ 
+-    if ((ThingListen(target) || RoomListen(target))
++    if (has_flag_by_name(target, "MONITOR", NOTYPE)
+         && eval_lock(speaker, target, Listen_Lock)
+       )
+       atr_comm_match(target, speaker, '^', ':',
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/parse.c pennmush-1.8.3p10/src/parse.c
+--- pennmush-1.8.3p9/src/parse.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/parse.c	2009-06-01 23:18:54.175032000 -0700
+@@ -332,6 +332,32 @@
+   return 1;
+ }
+ 
++/** Is string really an unsigned integer?
++ * \param str string to check.
++ * \retval 1 string is an uinteger.
++ * \retval 0 string is not an uinteger.
++ */
++bool
++is_strict_uinteger(const char *str)
++{
++  char *end;
++
++  if (!str)
++    return 0;
++  /* strtoul() accepts negative numbers, so we still have to do this check */
++  while (isspace((unsigned char) *str))
++    str++;
++  if (*str == '\0')
++    return 0;
++  if (!(isdigit((unsigned char) *str) || *str == '+'))
++    return 0;
++  errno = 0;
++  parse_uint(str, &end, 10);
++  if (errno == ERANGE || *end != '\0')
++    return 0;
++  return 1;
++}
++
+ /** Is string a number by the strict definition?
+  * A strict number is a non-null string that passes strtod.
+  * \param str string to check.
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/pcre.c pennmush-1.8.3p10/src/pcre.c
+--- pennmush-1.8.3p9/src/pcre.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/pcre.c	2009-08-24 00:53:12.249480000 -0700
+@@ -1258,6 +1258,7 @@
+ 
+ 
+ 
++
+ pcre_get_substring_list(const char *subject, int *ovector, int stringcount,
+                         const char ***listptr);
+ 
+@@ -1348,6 +1349,7 @@
+ 
+ 
+ 
++
+ pcre_get_substring(const char *subject, int *ovector, int stringcount,
+                    int stringnumber, const char **stringptr);
+ 
+@@ -1405,6 +1407,7 @@
+ 
+ 
+ 
++
+ pcre_get_named_substring(const pcre * code, const char *subject, int *ovector,
+                          int stringcount, const char *stringname,
+                          const char **stringptr);
+@@ -2292,6 +2295,7 @@
+ 
+ 
+ 
++
+ compile_regex(int, int, int *, uschar **, const uschar **, int *, BOOL, int,
+               int *, int *, branch_chain *, compile_data *);
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/predicat.c pennmush-1.8.3p10/src/predicat.c
+--- pennmush-1.8.3p9/src/predicat.c	2007-06-12 15:21:47.000000000 -0700
++++ pennmush-1.8.3p10/src/predicat.c	2009-06-01 23:18:54.175032000 -0700
+@@ -838,6 +838,9 @@
+ ok_password(const char *password)
+ {
+   const unsigned char *scan;
++  if (password == NULL)
++    return 0;
++
+   if (*password == '\0')
+     return 0;
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/set.c pennmush-1.8.3p10/src/set.c
+--- pennmush-1.8.3p9/src/set.c	2008-09-23 12:50:40.000000000 -0700
++++ pennmush-1.8.3p10/src/set.c	2009-08-24 00:53:12.249480000 -0700
+@@ -60,59 +60,65 @@
+  * \param newname new name for object.
+  */
+ void
+-do_name(dbref player, const char *name, char *newname)
++do_name(dbref player, const char *name, char *newname_)
+ {
+   dbref thing;
+   char *eon;                    /* End Of Name */
++  char *bon;                    /* Beginning of name */
+   char *myenv[10];
+   int i;
+-
+-  newname = trim_space_sep(newname, ' ');
++  char *newname;
+ 
+   if ((thing = match_controlled(player, name)) != NOTHING) {
++    newname = mush_strdup(trim_space_sep(newname_, ' '), "name.newname");
++    bon = newname;
++
+     /* check for bad name */
+     if ((*newname == '\0') || strchr(newname, '[')) {
+       notify(player, T("Give it what new name?"));
++      mush_free(newname, "name.newname");
+       return;
+     }
+     /* check for renaming a player */
+     if (IsPlayer(thing)) {
+-      if (*newname == '"') {
+-        for (; *newname && ((*newname == '"')
+-                            || isspace((unsigned char) *newname)); newname++) ;
+-        eon = newname;
+-        while (*eon && (*eon != '"')) {
+-          while (*eon && (*eon != '"'))
+-            eon++;
+-          if (*eon == '"') {
+-            *eon++ = '\0';
+-            while (*eon && isspace((unsigned char) *eon))
+-              eon++;
+-            break;
+-          }
++      // If it has "s, it's surrounding a spaced name, likely. So bon
++      // is beginning of name.
++      // I'm going to cheat here and make it so
++      // @name me="foo"bar names somebody foo, since " is an invalid name.
++      if (*bon == '"') {
++        bon++;
++        eon = bon;
++        while (*eon && *eon != '"') {
++          eon++;
++        }
++        if (*eon) {
++          *eon = '\0';
+         }
+       } else {
+-        eon = newname;
++        eon = bon;
+         while (*eon && !isspace((unsigned char) *eon))
+           eon++;
+         if (*eon)
+-          *eon++ = '\0';
++          *(eon++) = '\0';
+       }
+-      if (!ok_player_name(newname, player, thing)) {
++      if (!ok_player_name(bon, player, thing)) {
+         notify(player, T("You can't give a player that name."));
++        mush_free(newname, "name.newname");
+         return;
+       }
+       /* everything ok, notify */
+       do_log(LT_CONN, 0, 0, T("Name change by %s(#%d) to %s"),
+-             Name(thing), thing, newname);
++             Name(thing), thing, bon);
+       if (Suspect(thing))
+         flag_broadcast("WIZARD", 0,
+                        T("Broadcast: Suspect %s changed name to %s."),
+-                       Name(thing), newname);
++                       Name(thing), bon);
+       /* everything ok, we can fall through to change the name */
+     } else {
++      bon = newname;
+       if (!ok_name(newname)) {
+         notify(player, T("That is not a reasonable name."));
++        mush_free(newname, "name.newname");
+         return;
+       }
+     }
+@@ -121,18 +127,19 @@
+     myenv[0] = (char *) mush_malloc(BUFFER_LEN, "string");
+     myenv[1] = (char *) mush_malloc(BUFFER_LEN, "string");
+     mush_strncpy(myenv[0], Name(thing), BUFFER_LEN);
+-    strcpy(myenv[1], newname);
++    strcpy(myenv[1], bon);
+     for (i = 2; i < 10; i++)
+       myenv[i] = NULL;
+ 
+     if (IsPlayer(thing))
+-      reset_player_list(thing, Name(thing), NULL, newname, NULL);
+-    set_name(thing, newname);
++      reset_player_list(thing, Name(thing), NULL, bon, NULL);
++    set_name(thing, bon);
+ 
+     if (!AreQuiet(player, thing))
+       notify(player, T("Name set."));
+     real_did_it(player, thing, NULL, NULL, "ONAME", NULL, "ANAME", NOTHING,
+                 myenv, NA_INTER_PRESENCE);
++    mush_free(newname, "name.newname");
+     mush_free(myenv[0], "string");
+     mush_free(myenv[1], "string");
+   }
+@@ -994,7 +1001,7 @@
+ 
+   if ((thing =
+        noisy_match_result(player, what, TYPE_THING,
+-                          MAT_NEAR_THINGS)) != NOTHING) {
++                          MAT_NEAR_THINGS | MAT_ENGLISH)) != NOTHING) {
+     if (!eval_lock(player, thing, Use_Lock)) {
+       fail_lock(player, thing, Use_Lock, T("Permission denied."), NOTHING);
+       return;
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/wild.c pennmush-1.8.3p10/src/wild.c
+--- pennmush-1.8.3p9/src/wild.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/wild.c	2009-07-03 17:05:29.693553000 -0700
+@@ -545,11 +545,13 @@
+   pcre_extra *extra;
+   size_t i;
+   const char *errptr;
++  ansi_string *as;
+   const char *d;
+   size_t delenn;
+   int erroffset;
+   int offsets[99];
+   int subpatterns;
++  int totallen = 0;
+ 
+   for (i = 0; i < nmatches; i++)
+     matches[i] = NULL;
+@@ -564,14 +566,20 @@
+     return 0;
+   }
+   add_check("pcre");
+-  d = remove_markup(val, &delenn);
++
++  /* The ansi string */
++  as = parse_ansi_string(val);
++  delenn = as->len;
++  d = as->text;
++
+   extra = default_match_limit();
+   /*
+    * Now we try to match the pattern. The relevant fields will
+    * automatically be filled in by this.
+    */
+-  if ((subpatterns = pcre_exec(re, extra, d, delenn - 1, 0, 0, offsets, 99))
++  if ((subpatterns = pcre_exec(re, extra, d, delenn, 0, 0, offsets, 99))
+       < 0) {
++    free_ansi_string(as);
+     mush_free(re, "pcre");
+     return 0;
+   }
+@@ -587,20 +595,26 @@
+    * go from 1 to 9. We DO PRESERVE THIS PARADIGM, for consistency
+    * with other languages.
+    */
+-
+-  for (i = 0; i < nmatches && (int) i < subpatterns && (size_t) len > i; i++) {
+-    ssize_t sublen;
+-
+-    sublen = pcre_copy_substring(d, offsets, subpatterns, (int) i, data, len);
+-
+-    if (sublen < 0)
+-      break;
+-
+-    matches[i] = data;
+-    data += sublen + 2;
+-    len -= sublen + 2;
++  for (i = 0; i < nmatches && (int) i < subpatterns && totallen < len; i++) {
++    // Current data match.
++    /* This is more annoying than a jumping flea up the nose. Since 
++     * ansi_pcre_copy_substring() uses buff, bp instead of char *, len,
++     * we have to mangle bp and 'buff' by hand. Sound easy? We also
++     * have to make sure that 'buff' + len < BUFFER_LEN. Particularly since
++     * matchspace is 2*BUFFER_LEN
++     */
++    char *buff = data + totallen;
++    char *bp = buff;
++    matches[i] = bp;
++    if ((len - totallen) < BUFFER_LEN) {
++      buff = data + len - BUFFER_LEN;
++    }
++    ansi_pcre_copy_substring(as, offsets, subpatterns, (int) i, 1, buff, &bp);
++    *(bp++) = '\0';
++    totallen = bp - data;
+   }
+ 
++  free_ansi_string(as);
+   mush_free(re, "pcre");
+   return 1;
+ }
+diff -ruNd --speed-large-files pennmush-1.8.3p9/src/wiz.c pennmush-1.8.3p10/src/wiz.c
+--- pennmush-1.8.3p9/src/wiz.c	2009-02-22 22:50:00.000000000 -0800
++++ pennmush-1.8.3p10/src/wiz.c	2009-08-24 00:53:12.249480000 -0700
+@@ -1378,32 +1378,6 @@
+     mush_free(results, "search_results");
+ }
+ 
+-
+-#ifdef WIN32
+-#pragma warning( disable : 4761)        /* Disable bogus conversion warning */
+-#endif
+-/* ARGSUSED */
+-FUNCTION(fun_hidden)
+-{
+-  dbref it = match_thing(executor, args[0]);
+-  if (!See_All(executor)) {
+-    notify(executor, T("Permission denied."));
+-    safe_str("#-1", buff, bp);
+-    return;
+-  }
+-  if ((it == NOTHING) || (!IsPlayer(it))) {
+-    notify(executor, T("Couldn't find that player."));
+-    safe_str("#-1", buff, bp);
+-    return;
+-  }
+-  safe_boolean(hidden(it), buff, bp);
+-  return;
+-}
+-
+-#ifdef WIN32
+-#pragma warning( default : 4761)        /* Re-enable conversion warning */
+-#endif
+-
+ /* ARGSUSED */
+ FUNCTION(fun_quota)
+ {
+@@ -1985,13 +1959,6 @@
+   ATTR *a;
+   char lbuff[BUFFER_LEN];
+ 
+-  /* make sure player has money to do the search */
+-  if (!payfor(player, FIND_COST)) {
+-    notify_format(player, T("Searches cost %d %s."), FIND_COST,
+-                  ((FIND_COST == 1) ? MONEY : MONIES));
+-    return -1;
+-  }
+-
+   if (fill_search_spec(player, owner, nargs, args, &spec) < 0) {
+     giveto(player, FIND_COST);
+     if (spec.lock != TRUE_BOOLEXP)
+@@ -1999,6 +1966,17 @@
+     return -1;
+   }
+ 
++  /* make sure player has money to do the search -
++   * But only if this does an eval or lock search. */
++  if ((spec.lock != TRUE_BOOLEXP) ||
++      spec.cmdstring[0] || spec.listenstring[0] || spec.eval[0]) {
++    if (!payfor(player, FIND_COST)) {
++      notify_format(player, T("Searches cost %d %s."), FIND_COST,
++                    ((FIND_COST == 1) ? MONEY : MONIES));
++      return -1;
++    }
++  }
++
+   is_wiz = Search_All(player) || See_All(player);
+ 
+   if ((spec.owner != ANY_OWNER && spec.owner != Owner(player)) &&
+diff -ruNd --speed-large-files pennmush-1.8.3p9/test/testansi.pl pennmush-1.8.3p10/test/testansi.pl
+--- pennmush-1.8.3p9/test/testansi.pl	1969-12-31 16:00:00.000000000 -0800
++++ pennmush-1.8.3p10/test/testansi.pl	2009-06-01 23:18:54.175032000 -0700
+@@ -0,0 +1,19 @@
++use PennMUSH;
++use MUSHConnection;
++use TestHarness;
++
++$mush = PennMUSH->new();
++$god = $mush->loginGod();
++
++test('alias.1', $god, '@name me=God', ['Name set.']);
++test('alias.2', $god, '@name me=One', ['Name set.']);
++test('alias.3', $god, '@alias me=God', ['Alias set.']);
++test('alias.4', $god, '@name me=God', ['Name set.']);
++test('alias.5', $god, '@alias me=God', ['Alias set.']);
++test('alias.6', $god, '@name me=One', ['Name set.']);
++test('alias.7', $god, '@name me=God', ['Name set.']);
++test('alias.8', $god, '@alias me=God;One', ['Alias set.']);
++test('alias.9', $god, '@name me=Love', ['Name set.']);
++test('alias.10', $god, '@alias me', ['Alias removed.']);
++test('alias.11', $god, '@name me=God', ['Name set.']);
++
+diff -ruNd --speed-large-files pennmush-1.8.3p9/test/testrand.pl pennmush-1.8.3p10/test/testrand.pl
+--- pennmush-1.8.3p9/test/testrand.pl	2007-10-05 15:36:32.000000000 -0700
++++ pennmush-1.8.3p10/test/testrand.pl	2009-06-01 23:18:54.175032000 -0700
+@@ -7,4 +7,9 @@
+ test('rand.6', $god, 'think rand(1,1)', '1');
+ test('rand.7', $god, 'think rand(2,1)', '#-1');
+ test('rand.8', $god, 'think rand(0,9)', '^\d\s*$');
++test('rand.9', $god, 'think rand(-5, 10)', '#-1');
++test('rand.10', $god, 'think rand(-5, -10)', '#-1');
+ 
++test('randword.1', $god, 'think randword(%b%b%b)', '^$');
++test('randword.2', $god, 'think randword(foo)', 'foo');
++test('randword.3', $god, 'think randword(foo bar)', '(?:foo|bar)');
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/README.txt pennmush-1.8.3p10/win32/README.txt
+--- pennmush-1.8.3p9/win32/README.txt	2006-11-16 04:36:30.000000000 -0800
++++ pennmush-1.8.3p10/win32/README.txt	2009-07-03 17:05:29.693553000 -0700
+@@ -3,14 +3,12 @@
+ by Nick Gammon <nick@gammon.com.au> and Javelin and Luuk de Waard
+ Updated by Ervin Hearn <ehearn@pennmush.org>
+ 
+-Last update: Saturday, 11 November 2006
++Last update: Friday, 3 July 2009
+ 
+ 1. From the top-level pennmush directory,
+    Copy the following files        to:
+ 
+    For MSVC++ 6:
+-   win32/msvc6/pennmush.dsw        pennmush.dsw
+-   win32/msvc6/pennmush.dsp        pennmush.dsp
+    win32/config.h                  config.h
+    win32/confmagic.h               confmagic.h
+    win32/options.h                 options.h
+@@ -26,10 +24,8 @@
+    game/namescnf.dst               game/names.cnf
+    game/restrictcnf.dst            game/restrict.cnf
+ 
+-
+-   For MS VS.NET:
+-   win32/msvc.net/pennmush.vcproj  pennmush.vcproj
+-   win32/msvc.net/pennmush.sln     pennmush.sln
++   For MS VS.NET 2005 and later:
++   No copying required!
+ 
+    VS.NET has been configured to copy the .dst files automatically if they
+    do not exist, and the header files each time the project is compiled. This
+@@ -37,14 +33,13 @@
+    Configuration Properties -> Build Events -> Pre-Build Event and Post-Build
+    Event.
+ 
+-
+    If you've already got src/*local.c files that you've modified,
+    you'll just have to make sure that there are no new functions
+    in src/*local.dst that are missing in your src/*local.c files
+ 
+-2. Use supplied project files in the top-level pennmush directory.
++2. Open the appropriate Visual Studio project from the win32 subdirectory.
+ 
+-3. Compile
++3. Compile.
+ 
+ 4. From the top-level pennmush directory, the binary is: game/pennmush.exe
+ 
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/config.h pennmush-1.8.3p10/win32/config.h
+--- pennmush-1.8.3p9/win32/config.h	2007-07-08 20:50:12.000000000 -0700
++++ pennmush-1.8.3p10/win32/config.h	2009-07-03 17:05:29.693553000 -0700
+@@ -282,6 +282,8 @@
+ 
+ #define HAVE_SAFE_TOUPPER
+ 
++#define UINT32_MAX 0xffffffffU
++
+ /* Optional language features */
+ #define restrict
+ #undef inline
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/funs.h pennmush-1.8.3p10/win32/funs.h
+--- pennmush-1.8.3p9/win32/funs.h	2007-12-28 19:57:17.000000000 -0800
++++ pennmush-1.8.3p10/win32/funs.h	2009-07-03 17:05:29.693553000 -0700
+@@ -35,6 +35,7 @@
+ FUNCTION_PROTO(fun_cand);
+ FUNCTION_PROTO(fun_capstr);
+ FUNCTION_PROTO(fun_cat);
++FUNCTION_PROTO(fun_cbufferadd);
+ FUNCTION_PROTO(fun_ceil);
+ FUNCTION_PROTO(fun_cemit);
+ FUNCTION_PROTO(fun_center);
+@@ -174,6 +175,7 @@
+ FUNCTION_PROTO(fun_locks);
+ FUNCTION_PROTO(fun_log);
+ FUNCTION_PROTO(fun_lparent);
++FUNCTION_PROTO(fun_lpids);
+ FUNCTION_PROTO(fun_lports);
+ FUNCTION_PROTO(fun_lpos);
+ FUNCTION_PROTO(fun_lsearch);
+@@ -241,6 +243,7 @@
+ FUNCTION_PROTO(fun_pcreate);
+ FUNCTION_PROTO(fun_pemit);
+ FUNCTION_PROTO(fun_pi);
++FUNCTION_PROTO(fun_pidinfo);
+ FUNCTION_PROTO(fun_player);
+ FUNCTION_PROTO(fun_playermem);
+ FUNCTION_PROTO(fun_pmatch);
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/msvc6/pennmush.dsp pennmush-1.8.3p10/win32/msvc6/pennmush.dsp
+--- pennmush-1.8.3p9/win32/msvc6/pennmush.dsp	2006-11-16 04:36:30.000000000 -0800
++++ pennmush-1.8.3p10/win32/msvc6/pennmush.dsp	2009-07-03 17:05:29.693553000 -0700
+@@ -44,13 +44,13 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 1
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+-# ADD BASE CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD BASE CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT BASE CPP /Ox /Ot /Os
+-# ADD CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT CPP /Ox /Ot /Os
+ # ADD BASE RSC /l 0xc09 /d "_DEBUG"
+ # ADD RSC /l 0xc09 /d "_DEBUG"
+@@ -71,12 +71,12 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 0
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+-# ADD BASE CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+-# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD BASE CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+ # ADD BASE RSC /l 0xc09 /d "NDEBUG"
+ # ADD RSC /l 0xc09 /d "NDEBUG"
+ BSC32=bscmake.exe
+@@ -98,13 +98,13 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 1
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+-# ADD BASE CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD BASE CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT BASE CPP /Ox /Ot /Os
+-# ADD CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT CPP /Ox /Ot /Os
+ # ADD BASE RSC /l 0xc09 /d "_DEBUG"
+ # ADD RSC /l 0xc09 /d "_DEBUG"
+@@ -125,12 +125,12 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 0
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+-# ADD BASE CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+-# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD BASE CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+ # ADD BASE RSC /l 0xc09 /d "NDEBUG"
+ # ADD RSC /l 0xc09 /d "NDEBUG"
+ BSC32=bscmake.exe
+@@ -150,13 +150,13 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 1
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+-# ADD BASE CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD BASE CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT BASE CPP /Ox /Ot /Os
+-# ADD CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT CPP /Ox /Ot /Os
+ # ADD BASE RSC /l 0xc09 /d "_DEBUG"
+ # ADD RSC /l 0xc09 /d "_DEBUG"
+@@ -177,12 +177,12 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 0
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+-# ADD BASE CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+-# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD BASE CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+ # ADD BASE RSC /l 0xc09 /d "NDEBUG"
+ # ADD RSC /l 0xc09 /d "NDEBUG"
+ BSC32=bscmake.exe
+@@ -202,12 +202,12 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 1
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+ # ADD BASE CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+-# ADD CPP /nologo /MD /W3 /GX /ZI /I "./win32" /I "./hdrs" /I "./" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
++# ADD CPP /nologo /MD /W3 /GX /ZI /I "../../win32" /I "../../hdrs" /I "../../" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+ # SUBTRACT CPP /Ox /Ot /Os
+ # ADD BASE RSC /l 0xc09 /d "_DEBUG"
+ # ADD RSC /l 0xc09 /d "_DEBUG"
+@@ -227,12 +227,12 @@
+ # PROP BASE Target_Dir ""
+ # PROP Use_MFC 0
+ # PROP Use_Debug_Libraries 0
+-# PROP Output_Dir "./game"
+-# PROP Intermediate_Dir "./src"
++# PROP Output_Dir "../../game"
++# PROP Intermediate_Dir "../../src"
+ # PROP Ignore_Export_Lib 0
+ # PROP Target_Dir ""
+ # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+-# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "./hdrs" /I "./" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
++# ADD CPP /nologo /MD /W3 /GX /O2 /Ob0 /I "../../hdrs" /I "../../" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /I /Win32" " /c
+ # ADD BASE RSC /l 0xc09 /d "NDEBUG"
+ # ADD RSC /l 0xc09 /d "NDEBUG"
+ BSC32=bscmake.exe
+@@ -256,299 +256,303 @@
+ # Name "pennmush - Win32 Release"
+ # Begin Source File
+ 
+-SOURCE=.\src\access.c
++SOURCE=..\..\src\access.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\atr_tab.c
++SOURCE=..\..\src\atr_tab.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\attrib.c
++SOURCE=..\..\src\attrib.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\boolexp.c
++SOURCE=..\..\src\boolexp.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\bsd.c
++SOURCE=..\..\src\bsd.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\bufferq.c
++SOURCE=..\..\src\bufferq.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\chunk.c
++SOURCE=..\..\src\chunk.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\cmdlocal.c
++SOURCE=..\..\src\cmdlocal.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\cmds.c
++SOURCE=..\..\src\cmds.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\command.c
++SOURCE=..\..\src\command.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\compress.c
++SOURCE=..\..\src\compress.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\conf.c
++SOURCE=..\..\src\conf.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\cque.c
++SOURCE=..\..\src\cque.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\create.c
++SOURCE=..\..\src\create.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\db.c
++SOURCE=..\..\src\db.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\destroy.c
++SOURCE=..\..\src\destroy.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\extchat.c
++SOURCE=..\..\src\extchat.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\extmail.c
++SOURCE=..\..\src\extmail.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\filecopy.c
++SOURCE=..\..\src\filecopy.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\flaglocal.c
++SOURCE=..\..\src\flaglocal.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\flags.c
++SOURCE=..\..\src\flags.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funcrypt.c
++SOURCE=..\..\src\funcrypt.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\function.c
++SOURCE=..\..\src\function.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\fundb.c
++SOURCE=..\..\src\fundb.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funlist.c
++SOURCE=..\..\src\funlist.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funlocal.c
++SOURCE=..\..\src\funlocal.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funmath.c
++SOURCE=..\..\src\funmath.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funmisc.c
++SOURCE=..\..\src\funmisc.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funstr.c
++SOURCE=..\..\src\funstr.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funtime.c
++SOURCE=..\..\src\funtime.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\funufun.c
++SOURCE=..\..\src\funufun.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\game.c
++SOURCE=..\..\src\game.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\help.c
++SOURCE=..\..\src\help.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\htab.c
++SOURCE=..\..\src\htab.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\ident.c
++SOURCE=..\..\src\ident.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\local.c
++SOURCE=..\..\src\local.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\lock.c
++SOURCE=..\..\src\lock.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\log.c
++SOURCE=..\..\src\log.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\look.c
++SOURCE=..\..\src\look.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\malias.c
++SOURCE=..\..\src\malias.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\match.c
++SOURCE=..\..\src\match.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\memcheck.c
++SOURCE=..\..\src\memcheck.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\move.c
++SOURCE=..\..\src\move.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\mycrypt.c
++SOURCE=..\..\src\mycrypt.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\mymalloc.c
++SOURCE=..\..\src\mymalloc.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\myrlimit.c
++SOURCE=..\..\src\myrlimit.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\mysocket.c
++SOURCE=..\..\src\mysocket.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\myssl.c
++SOURCE=..\..\src\myssl.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\notify.c
++SOURCE=..\..\src\notify.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\parse.c
++SOURCE=..\..\src\parse.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\pcre.c
++SOURCE=..\..\src\pcre.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\player.c
++SOURCE=..\..\src\player.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\plyrlist.c
++SOURCE=..\..\src\plyrlist.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\predicat.c
++SOURCE=..\..\src\predicat.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\privtab.c
++SOURCE=..\..\src\privtab.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\ptab.c
++SOURCE=..\..\src\ptab.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\rob.c
++SOURCE=..\..\src\rob.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\services.c
++SOURCE=..\..\src\services.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\set.c
++SOURCE=..\..\src\set.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\shs.c
++SOURCE=..\..\src\SFMT.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\sig.c
++SOURCE=..\..\src\shs.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\speech.c
++SOURCE=..\..\src\sig.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\sql.c
++SOURCE=..\..\src\speech.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\strdup.c
++SOURCE=..\..\src\sql.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\strtree.c
++SOURCE=..\..\src\strdup.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\strutil.c
++SOURCE=..\..\src\strtree.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\tables.c
++SOURCE=..\..\src\strutil.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\timer.c
++SOURCE=..\..\src\tables.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\unparse.c
++SOURCE=..\..\src\timer.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\utils.c
++SOURCE=..\..\src\unparse.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\version.c
++SOURCE=..\..\src\utils.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\warnings.c
++SOURCE=..\..\src\version.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\wild.c
++SOURCE=..\..\src\warnings.c
+ # End Source File
+ # Begin Source File
+ 
+-SOURCE=.\src\wiz.c
++SOURCE=..\..\src\wild.c
++# End Source File
++# Begin Source File
++
++SOURCE=..\..\src\wiz.c
+ # End Source File
+ # End Target
+ # End Project
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/vs2005/pennmush.vcproj pennmush-1.8.3p10/win32/vs2005/pennmush.vcproj
+--- pennmush-1.8.3p9/win32/vs2005/pennmush.vcproj	2008-04-12 13:24:25.000000000 -0700
++++ pennmush-1.8.3p10/win32/vs2005/pennmush.vcproj	2009-07-03 17:05:29.693553000 -0700
+@@ -15,14 +15,14 @@
+ 	<Configurations>
+ 		<Configuration
+ 			Name="Debug|Win32"
+-			OutputDirectory=".\game"
+-			IntermediateDirectory=".\src"
++			OutputDirectory="..\..\game"
++			IntermediateDirectory="..\..\src"
+ 			ConfigurationType="1"
+ 			>
+ 			<Tool
+ 				Name="VCPreBuildEventTool"
+ 				Description="Copying necessary files..."
+-				CommandLine="IF NOT EXIST $(ProjectDir)\src\cmdlocal.c copy $(ProjectDir)\src\cmdlocal.dst $(ProjectDir)\src\cmdlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\src\flaglocal.c copy $(ProjectDir)\src\flaglocal.dst $(ProjectDir)\src\flaglocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\src\funlocal.c copy $(ProjectDir)\src\funlocal.dst $(ProjectDir)\src\funlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\src\local.c copy $(ProjectDir)\src\local.dst $(ProjectDir)\src\local.c&#x0D;&#x0A;copy $(ProjectDir)\win32\options.h $(ProjectDir)\options.h&#x0D;&#x0A;copy $(ProjectDir)\win32\config.h $(ProjectDir)\config.h&#x0D;&#x0A;copy $(ProjectDir)\win32\confmagic.h $(ProjectDir)\confmagic.h&#x0D;&#x0A;copy $(ProjectDir)\win32\cmds.h $(ProjectDir)\hdrs\cmds.h&#x0D;&#x0A;copy $(ProjectDir)\win32\funs.h $(ProjectDir)\hdrs\funs.h&#x0D;&#x0A;copy $(ProjectDir)\win32\patches.h $(ProjectDir)\hdrs\patches.h&#x0D;&#x0A;echo If any *local.c files failed to build, run build again.&#x0D;&#x0A;"
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\src\cmdlocal.c copy $(ProjectDir)\..\..\src\cmdlocal.dst $(ProjectDir)\..\..\src\cmdlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\flaglocal.c copy $(ProjectDir)\..\..\src\flaglocal.dst $(ProjectDir)\..\..\src\flaglocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\funlocal.c copy $(ProjectDir)\..\..\src\funlocal.dst $(ProjectDir)\..\..\src\funlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\local.c copy $(ProjectDir)\..\..\src\local.dst $(ProjectDir)\..\..\src\local.c&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\options.h $(ProjectDir)\..\..\options.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\config.h $(ProjectDir)\..\..\config.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\confmagic.h $(ProjectDir)\..\..\confmagic.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\cmds.h $(ProjectDir)\..\..\hdrs\cmds.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\funs.h $(ProjectDir)\..\..\hdrs\funs.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\patches.h $(ProjectDir)\..\..\hdrs\patches.h&#x0D;&#x0A;echo If any *local.c files failed to build, run build again.&#x0D;&#x0A;"
+ 			/>
+ 			<Tool
+ 				Name="VCCustomBuildTool"
+@@ -38,7 +38,7 @@
+ 			/>
+ 			<Tool
+ 				Name="VCCLCompilerTool"
+-				AdditionalIncludeDirectories=".\;.\hdrs"
++				AdditionalIncludeDirectories="..\..;..\..\hdrs"
+ 				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_USE_32BIT_TIME_T"
+ 				RuntimeLibrary="1"
+ 				CompileAs="1"
+@@ -84,7 +84,7 @@
+ 			<Tool
+ 				Name="VCPostBuildEventTool"
+ 				Description="Copying config files if they don&apos;t exist..."
+-				CommandLine="IF NOT EXIST $(ProjectDir)\game\mush.cnf copy $(ProjectDir)\game\mushcnf.dst $(ProjectDir)\game\mush.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\game\alias.cnf copy $(ProjectDir)\game\aliascnf.dst $(ProjectDir)\game\alias.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\game\names.cnf copy $(ProjectDir)\game\namescnf.dst $(ProjectDir)\game\names.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\game\restrict.cnf copy $(ProjectDir)\game\restrictcnf.dst $(ProjectDir)\game\restrict.cnf&#x0D;&#x0A;echo Don&apos;t forget to customize mush.cnf!&#x0D;&#x0A;"
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\game\mush.cnf copy $(ProjectDir)\..\..\game\mushcnf.dst $(ProjectDir)\..\..\game\mush.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\alias.cnf copy $(ProjectDir)\..\..\game\aliascnf.dst $(ProjectDir)\..\..\game\alias.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\names.cnf copy $(ProjectDir)\..\..\game\namescnf.dst $(ProjectDir)\..\..\game\names.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\restrict.cnf copy $(ProjectDir)\..\..\game\restrictcnf.dst $(ProjectDir)\..\..\game\restrict.cnf&#x0D;&#x0A;echo Don&apos;t forget to customize mush.cnf!&#x0D;&#x0A;"
+ 			/>
+ 		</Configuration>
+ 		<Configuration
+@@ -96,7 +96,7 @@
+ 			<Tool
+ 				Name="VCPreBuildEventTool"
+ 				Description="Copying necessary files..."
+-				CommandLine="IF NOT EXIST $(ProjectDir)\src\cmdlocal.c copy $(ProjectDir)\src\cmdlocal.dst $(ProjectDir)\src\cmdlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\src\flaglocal.c copy $(ProjectDir)\src\flaglocal.dst $(ProjectDir)\src\flaglocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\src\funlocal.c copy $(ProjectDir)\src\funlocal.dst $(ProjectDir)\src\funlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\src\local.c copy $(ProjectDir)\src\local.dst $(ProjectDir)\src\local.c&#x0D;&#x0A;copy $(ProjectDir)\win32\options.h $(ProjectDir)\options.h&#x0D;&#x0A;copy $(ProjectDir)\win32\config.h $(ProjectDir)\config.h&#x0D;&#x0A;copy $(ProjectDir)\win32\confmagic.h $(ProjectDir)\confmagic.h&#x0D;&#x0A;copy $(ProjectDir)\win32\cmds.h $(ProjectDir)\hdrs\cmds.h&#x0D;&#x0A;copy $(ProjectDir)\win32\funs.h $(ProjectDir)\hdrs\funs.h&#x0D;&#x0A;copy $(ProjectDir)\win32\patches.h $(ProjectDir)\hdrs\patches.h&#x0D;&#x0A;echo If any *local.c files failed to build, run build again.&#x0D;&#x0A;"
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\src\cmdlocal.c copy $(ProjectDir)\..\..\src\cmdlocal.dst $(ProjectDir)\..\..\src\cmdlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\flaglocal.c copy $(ProjectDir)\..\..\src\flaglocal.dst $(ProjectDir)\..\..\src\flaglocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\funlocal.c copy $(ProjectDir)\..\..\src\funlocal.dst $(ProjectDir)\..\..\src\funlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\local.c copy $(ProjectDir)\..\..\src\local.dst $(ProjectDir)\..\..\src\local.c&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\options.h $(ProjectDir)\..\..\options.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\config.h $(ProjectDir)\..\..\config.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\confmagic.h $(ProjectDir)\..\..\confmagic.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\cmds.h $(ProjectDir)\..\..\hdrs\cmds.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\funs.h $(ProjectDir)\..\..\hdrs\funs.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\patches.h $(ProjectDir)\..\..\hdrs\patches.h&#x0D;&#x0A;echo If any *local.c files failed to build, run build again.&#x0D;&#x0A;"
+ 			/>
+ 			<Tool
+ 				Name="VCCustomBuildTool"
+@@ -112,7 +112,7 @@
+ 			/>
+ 			<Tool
+ 				Name="VCCLCompilerTool"
+-				AdditionalIncludeDirectories=".\;.\hdrs"
++				AdditionalIncludeDirectories="..\..;..\..\hdrs"
+ 				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_USE_32BIT_TIME_T"
+ 				StringPooling="true"
+ 				CompileAs="1"
+@@ -157,7 +157,7 @@
+ 			<Tool
+ 				Name="VCPostBuildEventTool"
+ 				Description="Copying config files if they don&apos;t exist..."
+-				CommandLine="IF NOT EXIST $(ProjectDir)\game\mush.cnf copy $(ProjectDir)\game\mushcnf.dst $(ProjectDir)\game\mush.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\game\alias.cnf copy $(ProjectDir)\game\aliascnf.dst $(ProjectDir)\game\alias.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\game\names.cnf copy $(ProjectDir)\game\namescnf.dst $(ProjectDir)\game\names.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\game\restrict.cnf copy $(ProjectDir)\game\restrictcnf.dst $(ProjectDir)\game\restrict.cnf&#x0D;&#x0A;echo Don&apos;t forget to customize mush.cnf!&#x0D;&#x0A;"
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\game\mush.cnf copy $(ProjectDir)\..\..\game\mushcnf.dst $(ProjectDir)\..\..\game\mush.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\alias.cnf copy $(ProjectDir)\..\..\game\aliascnf.dst $(ProjectDir)\..\..\game\alias.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\names.cnf copy $(ProjectDir)\..\..\game\namescnf.dst $(ProjectDir)\..\..\game\names.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\restrict.cnf copy $(ProjectDir)\..\..\game\restrictcnf.dst $(ProjectDir)\..\..\game\restrict.cnf&#x0D;&#x0A;echo Don&apos;t forget to customize mush.cnf!&#x0D;&#x0A;"
+ 			/>
+ 		</Configuration>
+ 	</Configurations>
+@@ -170,315 +170,319 @@
+ 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+ 			>
+ 			<File
+-				RelativePath=".\src\access.c"
++				RelativePath="..\..\src\access.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\atr_tab.c"
++				RelativePath="..\..\src\atr_tab.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\attrib.c"
++				RelativePath="..\..\src\attrib.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\boolexp.c"
++				RelativePath="..\..\src\boolexp.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\bsd.c"
++				RelativePath="..\..\src\bsd.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\bufferq.c"
++				RelativePath="..\..\src\bufferq.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\chunk.c"
++				RelativePath="..\..\src\chunk.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\cmdlocal.c"
++				RelativePath="..\..\src\cmdlocal.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\cmds.c"
++				RelativePath="..\..\src\cmds.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\command.c"
++				RelativePath="..\..\src\command.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\compress.c"
++				RelativePath="..\..\src\compress.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\conf.c"
++				RelativePath="..\..\src\conf.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\cque.c"
++				RelativePath="..\..\src\cque.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\create.c"
++				RelativePath="..\..\src\create.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\db.c"
++				RelativePath="..\..\src\db.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\destroy.c"
++				RelativePath="..\..\src\destroy.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\extchat.c"
++				RelativePath="..\..\src\extchat.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\extmail.c"
++				RelativePath="..\..\src\extmail.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\filecopy.c"
++				RelativePath="..\..\src\filecopy.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\flaglocal.c"
++				RelativePath="..\..\src\flaglocal.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\flags.c"
++				RelativePath="..\..\src\flags.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funcrypt.c"
++				RelativePath="..\..\src\funcrypt.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\function.c"
++				RelativePath="..\..\src\function.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\fundb.c"
++				RelativePath="..\..\src\fundb.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funlist.c"
++				RelativePath="..\..\src\funlist.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funlocal.c"
++				RelativePath="..\..\src\funlocal.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funmath.c"
++				RelativePath="..\..\src\funmath.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funmisc.c"
++				RelativePath="..\..\src\funmisc.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funstr.c"
++				RelativePath="..\..\src\funstr.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funtime.c"
++				RelativePath="..\..\src\funtime.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\funufun.c"
++				RelativePath="..\..\src\funufun.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\game.c"
++				RelativePath="..\..\src\game.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\help.c"
++				RelativePath="..\..\src\help.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\htab.c"
++				RelativePath="..\..\src\htab.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\ident.c"
++				RelativePath="..\..\src\ident.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\intmap.c"
++				RelativePath="..\..\src\intmap.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\local.c"
++				RelativePath="..\..\src\local.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\lock.c"
++				RelativePath="..\..\src\lock.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\log.c"
++				RelativePath="..\..\src\log.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\look.c"
++				RelativePath="..\..\src\look.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\malias.c"
++				RelativePath="..\..\src\malias.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\markup.c"
++				RelativePath="..\..\src\markup.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\match.c"
++				RelativePath="..\..\src\match.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\memcheck.c"
++				RelativePath="..\..\src\memcheck.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\move.c"
++				RelativePath="..\..\src\move.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\mycrypt.c"
++				RelativePath="..\..\src\mycrypt.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\mymalloc.c"
++				RelativePath="..\..\src\mymalloc.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\myrlimit.c"
++				RelativePath="..\..\src\myrlimit.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\mysocket.c"
++				RelativePath="..\..\src\mysocket.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\myssl.c"
++				RelativePath="..\..\src\myssl.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\notify.c"
++				RelativePath="..\..\src\notify.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\parse.c"
++				RelativePath="..\..\src\parse.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\pcre.c"
++				RelativePath="..\..\src\pcre.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\player.c"
++				RelativePath="..\..\src\player.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\plyrlist.c"
++				RelativePath="..\..\src\plyrlist.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\predicat.c"
++				RelativePath="..\..\src\predicat.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\privtab.c"
++				RelativePath="..\..\src\privtab.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\ptab.c"
++				RelativePath="..\..\src\ptab.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\rob.c"
++				RelativePath="..\..\src\rob.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\services.c"
++				RelativePath="..\..\src\services.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\set.c"
++				RelativePath="..\..\src\set.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\shs.c"
++				RelativePath="..\..\src\SFMT.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\sig.c"
++				RelativePath="..\..\src\shs.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\sort.c"
++				RelativePath="..\..\src\sig.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\speech.c"
++				RelativePath="..\..\src\sort.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\sql.c"
++				RelativePath="..\..\src\speech.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\strdup.c"
++				RelativePath="..\..\src\sql.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\strtree.c"
++				RelativePath="..\..\src\strdup.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\strutil.c"
++				RelativePath="..\..\src\strtree.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\tables.c"
++				RelativePath="..\..\src\strutil.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\timer.c"
++				RelativePath="..\..\src\tables.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\unparse.c"
++				RelativePath="..\..\src\timer.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\utils.c"
++				RelativePath="..\..\src\unparse.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\version.c"
++				RelativePath="..\..\src\utils.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\wait.c"
++				RelativePath="..\..\src\version.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\warnings.c"
++				RelativePath="..\..\src\wait.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\wild.c"
++				RelativePath="..\..\src\warnings.c"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\src\wiz.c"
++				RelativePath="..\..\src\wild.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\wiz.c"
+ 				>
+ 			</File>
+ 		</Filter>
+@@ -488,219 +492,219 @@
+ 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+ 			>
+ 			<File
+-				RelativePath=".\hdrs\access.h"
++				RelativePath="..\..\hdrs\access.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\ansi.h"
++				RelativePath="..\..\hdrs\ansi.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\atr_tab.h"
++				RelativePath="..\..\hdrs\atr_tab.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\attrib.h"
++				RelativePath="..\..\hdrs\attrib.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\boolexp.h"
++				RelativePath="..\..\hdrs\boolexp.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\bufferq.h"
++				RelativePath="..\..\hdrs\bufferq.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\case.h"
++				RelativePath="..\..\hdrs\case.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\chunk.h"
++				RelativePath="..\..\hdrs\chunk.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\cmds.h"
++				RelativePath="..\..\hdrs\cmds.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\command.h"
++				RelativePath="..\..\hdrs\command.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\compile.h"
++				RelativePath="..\..\hdrs\compile.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\conf.h"
++				RelativePath="..\..\hdrs\conf.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\config.h"
++				RelativePath="..\..\config.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\confmagic.h"
++				RelativePath="..\..\confmagic.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\copyrite.h"
++				RelativePath="..\..\hdrs\copyrite.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\dbdefs.h"
++				RelativePath="..\..\hdrs\dbdefs.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\dbio.h"
++				RelativePath="..\..\hdrs\dbio.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\extchat.h"
++				RelativePath="..\..\hdrs\extchat.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\externs.h"
++				RelativePath="..\..\hdrs\externs.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\extmail.h"
++				RelativePath="..\..\hdrs\extmail.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\flags.h"
++				RelativePath="..\..\hdrs\flags.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\function.h"
++				RelativePath="..\..\hdrs\function.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\funs.h"
++				RelativePath="..\..\hdrs\funs.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\game.h"
++				RelativePath="..\..\hdrs\game.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\getpgsiz.h"
++				RelativePath="..\..\hdrs\getpgsiz.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\help.h"
++				RelativePath="..\..\hdrs\help.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\htab.h"
++				RelativePath="..\..\hdrs\htab.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\ident.h"
++				RelativePath="..\..\hdrs\ident.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\intmap.h"
++				RelativePath="..\..\hdrs\intmap.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\intrface.h"
++				RelativePath="..\..\hdrs\intrface.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\lock.h"
++				RelativePath="..\..\hdrs\lock.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\log.h"
++				RelativePath="..\..\hdrs\log.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\lookup.h"
++				RelativePath="..\..\hdrs\lookup.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\malias.h"
++				RelativePath="..\..\hdrs\malias.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\match.h"
++				RelativePath="..\..\hdrs\match.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\mushdb.h"
++				RelativePath="..\..\hdrs\mushdb.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\mushtype.h"
++				RelativePath="..\..\hdrs\mushtype.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\mymalloc.h"
++				RelativePath="..\..\hdrs\mymalloc.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\mypcre.h"
++				RelativePath="..\..\hdrs\mypcre.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\mysocket.h"
++				RelativePath="..\..\hdrs\mysocket.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\myssl.h"
++				RelativePath="..\..\hdrs\myssl.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\oldflags.h"
++				RelativePath="..\..\hdrs\oldflags.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\options.h"
++				RelativePath="..\..\options.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\parse.h"
++				RelativePath="..\..\hdrs\parse.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\patches.h"
++				RelativePath="..\..\hdrs\patches.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\privtab.h"
++				RelativePath="..\..\hdrs\privtab.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\ptab.h"
++				RelativePath="..\..\hdrs\ptab.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\pueblo.h"
++				RelativePath="..\..\hdrs\pueblo.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\shs.h"
++				RelativePath="..\..\hdrs\shs.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\sort.h"
++				RelativePath="..\..\hdrs\sort.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\strtree.h"
++				RelativePath="..\..\hdrs\strtree.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\switches.h"
++				RelativePath="..\..\hdrs\switches.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\version.h"
++				RelativePath="..\..\hdrs\version.h"
+ 				>
+ 			</File>
+ 			<File
+-				RelativePath=".\hdrs\wait.h"
++				RelativePath="..\..\hdrs\wait.h"
+ 				>
+ 			</File>
+ 		</Filter>
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/vs2008/pennmush.sln pennmush-1.8.3p10/win32/vs2008/pennmush.sln
+--- pennmush-1.8.3p9/win32/vs2008/pennmush.sln	1969-12-31 16:00:00.000000000 -0800
++++ pennmush-1.8.3p10/win32/vs2008/pennmush.sln	2009-07-03 17:05:29.693553000 -0700
+@@ -0,0 +1,20 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 10.00
++# Visual C++ Express 2008
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pennmush", "pennmush.vcproj", "{0913C0F1-F2F1-4B24-B660-029552A337CB}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|Win32 = Debug|Win32
++		Release|Win32 = Release|Win32
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{0913C0F1-F2F1-4B24-B660-029552A337CB}.Debug|Win32.ActiveCfg = Debug|Win32
++		{0913C0F1-F2F1-4B24-B660-029552A337CB}.Debug|Win32.Build.0 = Debug|Win32
++		{0913C0F1-F2F1-4B24-B660-029552A337CB}.Release|Win32.ActiveCfg = Release|Win32
++		{0913C0F1-F2F1-4B24-B660-029552A337CB}.Release|Win32.Build.0 = Release|Win32
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff -ruNd --speed-large-files pennmush-1.8.3p9/win32/vs2008/pennmush.vcproj pennmush-1.8.3p10/win32/vs2008/pennmush.vcproj
+--- pennmush-1.8.3p9/win32/vs2008/pennmush.vcproj	1969-12-31 16:00:00.000000000 -0800
++++ pennmush-1.8.3p10/win32/vs2008/pennmush.vcproj	2009-07-03 17:05:29.693553000 -0700
+@@ -0,0 +1,713 @@
++<?xml version="1.0" encoding="Windows-1252"?>
++<VisualStudioProject
++	ProjectType="Visual C++"
++	Version="9.00"
++	Name="pennmush"
++	ProjectGUID="{0913C0F1-F2F1-4B24-B660-029552A337CB}"
++	TargetFrameworkVersion="131072"
++	>
++	<Platforms>
++		<Platform
++			Name="Win32"
++		/>
++	</Platforms>
++	<ToolFiles>
++	</ToolFiles>
++	<Configurations>
++		<Configuration
++			Name="Debug|Win32"
++			OutputDirectory="..\..\game"
++			IntermediateDirectory="..\..\src"
++			ConfigurationType="1"
++			>
++			<Tool
++				Name="VCPreBuildEventTool"
++				Description="Copying necessary files..."
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\src\cmdlocal.c copy $(ProjectDir)\..\..\src\cmdlocal.dst $(ProjectDir)\..\..\src\cmdlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\flaglocal.c copy $(ProjectDir)\..\..\src\flaglocal.dst $(ProjectDir)\..\..\src\flaglocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\funlocal.c copy $(ProjectDir)\..\..\src\funlocal.dst $(ProjectDir)\..\..\src\funlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\local.c copy $(ProjectDir)\..\..\src\local.dst $(ProjectDir)\..\..\src\local.c&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\options.h $(ProjectDir)\..\..\options.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\config.h $(ProjectDir)\..\..\config.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\confmagic.h $(ProjectDir)\..\..\confmagic.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\cmds.h $(ProjectDir)\..\..\hdrs\cmds.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\funs.h $(ProjectDir)\..\..\hdrs\funs.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\patches.h $(ProjectDir)\..\..\hdrs\patches.h&#x0D;&#x0A;echo If any *local.c files failed to build, run build again.&#x0D;&#x0A;"
++			/>
++			<Tool
++				Name="VCCustomBuildTool"
++			/>
++			<Tool
++				Name="VCXMLDataGeneratorTool"
++			/>
++			<Tool
++				Name="VCWebServiceProxyGeneratorTool"
++			/>
++			<Tool
++				Name="VCMIDLTool"
++			/>
++			<Tool
++				Name="VCCLCompilerTool"
++				AdditionalIncludeDirectories="..\..;..\..\hdrs"
++				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_USE_32BIT_TIME_T"
++				RuntimeLibrary="1"
++				CompileAs="1"
++			/>
++			<Tool
++				Name="VCManagedResourceCompilerTool"
++			/>
++			<Tool
++				Name="VCResourceCompilerTool"
++			/>
++			<Tool
++				Name="VCPreLinkEventTool"
++			/>
++			<Tool
++				Name="VCLinkerTool"
++				AdditionalDependencies="user32.lib winmm.lib wsock32.lib"
++				GenerateDebugInformation="true"
++				SubSystem="1"
++				StackReserveSize="8388608"
++				RandomizedBaseAddress="1"
++				DataExecutionPrevention="0"
++				TargetMachine="1"
++			/>
++			<Tool
++				Name="VCALinkTool"
++			/>
++			<Tool
++				Name="VCManifestTool"
++			/>
++			<Tool
++				Name="VCXDCMakeTool"
++			/>
++			<Tool
++				Name="VCBscMakeTool"
++			/>
++			<Tool
++				Name="VCFxCopTool"
++			/>
++			<Tool
++				Name="VCAppVerifierTool"
++			/>
++			<Tool
++				Name="VCPostBuildEventTool"
++				Description="Copying config files if they don&apos;t exist..."
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\game\mush.cnf copy $(ProjectDir)\..\..\game\mushcnf.dst $(ProjectDir)\..\..\game\mush.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\alias.cnf copy $(ProjectDir)\..\..\game\aliascnf.dst $(ProjectDir)\..\..\game\alias.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\names.cnf copy $(ProjectDir)\..\..\game\namescnf.dst $(ProjectDir)\..\..\game\names.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\restrict.cnf copy $(ProjectDir)\..\..\game\restrictcnf.dst $(ProjectDir)\..\..\game\restrict.cnf&#x0D;&#x0A;echo Don&apos;t forget to customize mush.cnf!&#x0D;&#x0A;"
++			/>
++		</Configuration>
++		<Configuration
++			Name="Release|Win32"
++			OutputDirectory=".\game"
++			IntermediateDirectory=".\src"
++			ConfigurationType="1"
++			>
++			<Tool
++				Name="VCPreBuildEventTool"
++				Description="Copying necessary files..."
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\src\cmdlocal.c copy $(ProjectDir)\..\..\src\cmdlocal.dst $(ProjectDir)\..\..\src\cmdlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\flaglocal.c copy $(ProjectDir)\..\..\src\flaglocal.dst $(ProjectDir)\..\..\src\flaglocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\funlocal.c copy $(ProjectDir)\..\..\src\funlocal.dst $(ProjectDir)\..\..\src\funlocal.c&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\src\local.c copy $(ProjectDir)\..\..\src\local.dst $(ProjectDir)\..\..\src\local.c&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\options.h $(ProjectDir)\..\..\options.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\config.h $(ProjectDir)\..\..\config.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\confmagic.h $(ProjectDir)\..\..\confmagic.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\cmds.h $(ProjectDir)\..\..\hdrs\cmds.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\funs.h $(ProjectDir)\..\..\hdrs\funs.h&#x0D;&#x0A;copy $(ProjectDir)\..\..\win32\patches.h $(ProjectDir)\..\..\hdrs\patches.h&#x0D;&#x0A;echo If any *local.c files failed to build, run build again.&#x0D;&#x0A;"
++			/>
++			<Tool
++				Name="VCCustomBuildTool"
++			/>
++			<Tool
++				Name="VCXMLDataGeneratorTool"
++			/>
++			<Tool
++				Name="VCWebServiceProxyGeneratorTool"
++			/>
++			<Tool
++				Name="VCMIDLTool"
++			/>
++			<Tool
++				Name="VCCLCompilerTool"
++				AdditionalIncludeDirectories="..\..;..\..\hdrs"
++				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_USE_32BIT_TIME_T"
++				StringPooling="true"
++				CompileAs="1"
++			/>
++			<Tool
++				Name="VCManagedResourceCompilerTool"
++			/>
++			<Tool
++				Name="VCResourceCompilerTool"
++			/>
++			<Tool
++				Name="VCPreLinkEventTool"
++			/>
++			<Tool
++				Name="VCLinkerTool"
++				AdditionalDependencies="user32.lib winmm.lib wsock32.lib"
++				SubSystem="1"
++				StackReserveSize="8388608"
++				RandomizedBaseAddress="1"
++				DataExecutionPrevention="0"
++				TargetMachine="1"
++			/>
++			<Tool
++				Name="VCALinkTool"
++			/>
++			<Tool
++				Name="VCManifestTool"
++			/>
++			<Tool
++				Name="VCXDCMakeTool"
++			/>
++			<Tool
++				Name="VCBscMakeTool"
++			/>
++			<Tool
++				Name="VCFxCopTool"
++			/>
++			<Tool
++				Name="VCAppVerifierTool"
++			/>
++			<Tool
++				Name="VCPostBuildEventTool"
++				Description="Copying config files if they don&apos;t exist..."
++				CommandLine="IF NOT EXIST $(ProjectDir)\..\..\game\mush.cnf copy $(ProjectDir)\..\..\game\mushcnf.dst $(ProjectDir)\..\..\game\mush.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\alias.cnf copy $(ProjectDir)\..\..\game\aliascnf.dst $(ProjectDir)\..\..\game\alias.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\names.cnf copy $(ProjectDir)\..\..\game\namescnf.dst $(ProjectDir)\..\..\game\names.cnf&#x0D;&#x0A;IF NOT EXIST $(ProjectDir)\..\..\game\restrict.cnf copy $(ProjectDir)\..\..\game\restrictcnf.dst $(ProjectDir)\..\..\game\restrict.cnf&#x0D;&#x0A;echo Don&apos;t forget to customize mush.cnf!&#x0D;&#x0A;"
++			/>
++		</Configuration>
++	</Configurations>
++	<References>
++	</References>
++	<Files>
++		<Filter
++			Name="Source Files"
++			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
++			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
++			>
++			<File
++				RelativePath="..\..\src\access.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\atr_tab.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\attrib.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\boolexp.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\bsd.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\bufferq.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\chunk.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\cmdlocal.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\cmds.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\command.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\compress.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\conf.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\cque.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\create.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\db.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\destroy.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\extchat.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\extmail.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\filecopy.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\flaglocal.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\flags.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funcrypt.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\function.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\fundb.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funlist.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funlocal.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funmath.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funmisc.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funstr.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funtime.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\funufun.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\game.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\help.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\htab.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\ident.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\intmap.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\local.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\lock.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\log.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\look.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\malias.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\markup.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\match.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\memcheck.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\move.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\mycrypt.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\mymalloc.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\myrlimit.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\mysocket.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\myssl.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\notify.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\parse.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\pcre.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\player.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\plyrlist.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\predicat.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\privtab.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\ptab.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\rob.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\services.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\set.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\SFMT.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\shs.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\sig.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\sort.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\speech.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\sql.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\strdup.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\strtree.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\strutil.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\tables.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\timer.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\unparse.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\utils.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\version.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\wait.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\warnings.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\wild.c"
++				>
++			</File>
++			<File
++				RelativePath="..\..\src\wiz.c"
++				>
++			</File>
++		</Filter>
++		<Filter
++			Name="Header Files"
++			Filter="h;hpp;hxx;hm;inl;inc;xsd"
++			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
++			>
++			<File
++				RelativePath="..\..\hdrs\access.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\ansi.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\atr_tab.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\attrib.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\boolexp.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\bufferq.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\case.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\chunk.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\cmds.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\command.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\compile.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\conf.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\config.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\confmagic.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\copyrite.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\dbdefs.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\dbio.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\extchat.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\externs.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\extmail.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\flags.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\function.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\funs.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\game.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\getpgsiz.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\help.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\htab.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\ident.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\intmap.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\intrface.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\lock.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\log.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\lookup.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\malias.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\match.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\mushdb.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\mushtype.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\mymalloc.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\mypcre.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\mysocket.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\myssl.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\oldflags.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\options.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\parse.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\patches.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\privtab.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\ptab.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\pueblo.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\shs.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\sort.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\strtree.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\switches.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\version.h"
++				>
++			</File>
++			<File
++				RelativePath="..\..\hdrs\wait.h"
++				>
++			</File>
++		</Filter>
++	</Files>
++	<Globals>
++	</Globals>
++</VisualStudioProject>
