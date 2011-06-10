@@ -55,6 +55,7 @@ extern time_t mudtime;
 extern int shutdown_flag;       /* if non-zero, interface should shut down */
 void emergency_shutdown(void);
 void boot_desc(DESC *d);        /* remove a player */
+int boot_player(dbref player, int idleonly, int slilent);
 DESC *player_desc(dbref player);        /* find descriptors */
 DESC *inactive_desc(dbref player);      /* find descriptors */
 DESC *port_desc(int port);      /* find descriptors */
@@ -109,13 +110,16 @@ int hidden(dbref player);
 dbref guest_to_connect(dbref player);
 void dump_reboot_db(void);
 void close_ssl_connections(void);
+DESC *least_idle_desc(dbref player, int priv);
 int least_idle_time(dbref player);
 int least_idle_time_priv(dbref player);
 int most_conn_time(dbref player);
 int most_conn_time_priv(dbref player);
 char *least_idle_ip(dbref player);
 char *least_idle_hostname(dbref player);
-
+void do_who_mortal(dbref player, char *name);
+void do_who_admin(dbref player, char *name);
+void do_who_session(dbref player, char *name);
 /* sql.c */
 void sql_shutdown(void);
 
@@ -399,7 +403,7 @@ void page_return(dbref player, dbref target, const char *type,
 char *grep_util(dbref player, dbref thing, char *pattern,
                 char *lookfor, int sensitive, int wild);
 dbref where_is(dbref thing);
-int charge_action(dbref player, dbref thing, const char *awhat);
+int charge_action(dbref thing);
 dbref first_visible(dbref player, dbref thing);
 
 /* From rob.c */
@@ -409,6 +413,7 @@ void s_Pennies(dbref thing, int amount);
 void chown_object(dbref player, dbref thing, dbref newowner, int preserve);
 
 /* From speech.c */
+int okay_pemit(dbref player, dbref target);
 int vmessageformat(dbref player, const char *attribute,
                    dbref executor, int flags, int nargs, ...);
 int messageformat(dbref player, const char *attribute,

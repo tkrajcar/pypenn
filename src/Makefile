@@ -318,7 +318,6 @@ bsd.o: ../hdrs/access.h
 bsd.o: ../hdrs/command.h
 bsd.o: ../hdrs/switches.h
 bsd.o: ../hdrs/version.h
-bsd.o: ../hdrs/patches.h
 bsd.o: ../hdrs/mysocket.h
 bsd.o: ../hdrs/ident.h
 bsd.o: ../hdrs/lookup.h
@@ -521,6 +520,8 @@ cque.o: ../hdrs/strtree.h
 cque.o: ../hdrs/mymalloc.h
 cque.o: ../hdrs/game.h
 cque.o: ../hdrs/attrib.h
+cque.o: ../hdrs/function.h
+cque.o: ../hdrs/case.h
 cque.o: ../hdrs/log.h
 cque.o: ../hdrs/intmap.h
 create.o: ../hdrs/copyrite.h
@@ -1401,7 +1402,6 @@ notify.o: ../hdrs/pueblo.h
 notify.o: ../hdrs/parse.h
 notify.o: ../hdrs/access.h
 notify.o: ../hdrs/version.h
-notify.o: ../hdrs/patches.h
 notify.o: ../hdrs/mysocket.h
 notify.o: ../hdrs/ident.h
 notify.o: ../hdrs/strtree.h
@@ -1837,7 +1837,6 @@ version.o: ../hdrs/chunk.h
 version.o: ../confmagic.h
 version.o: ../hdrs/mypcre.h
 version.o: ../hdrs/version.h
-version.o: ../hdrs/patches.h
 version.o: ../hdrs/buildinf.h
 wait.o: ../config.h
 warnings.o: ../config.h

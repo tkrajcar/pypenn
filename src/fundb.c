@@ -36,18 +36,9 @@ static lock_type get_locktype(char *str);
 extern struct db_stat_info *get_stats(dbref owner);
 static int lattr_helper(dbref player, dbref thing, dbref parent,
                         char const *pattern, ATTR *atr, void *args);
-static dbref
-
-
-
-
-
-
-
-dbwalk(char *buff, char **bp, dbref executor, dbref enactor,
-       int type, dbref loc, dbref after, int skipdark,
-       int start, int count, int *retcount);
-
+static dbref dbwalk(char *buff, char **bp, dbref executor, dbref enactor,
+                    int type, dbref loc, dbref after, int skipdark,
+                    int start, int count, int *retcount);
 
 const char *
 do_get_attrib(dbref executor, dbref thing, const char *attrib)
@@ -337,7 +328,7 @@ FUNCTION(fun_eval)
     add_check("fun_eval.attr_value");
     process_expression(buff, bp, &tp, thing, executor, executor,
                        PE_DEFAULT, PT_DEFAULT, pe_info);
-    mush_free((Malloc_t) tbuf, "fun_eval.attr_value");
+    mush_free(tbuf, "fun_eval.attr_value");
     return;
   } else if (a || !Can_Examine(executor, thing)) {
     safe_str(T(e_atrperm), buff, bp);
@@ -377,7 +368,7 @@ FUNCTION(fun_get_eval)
     add_check("fun_eval.attr_value");
     process_expression(buff, bp, &tp, thing, executor, executor,
                        PE_DEFAULT, PT_DEFAULT, pe_info);
-    mush_free((Malloc_t) tbuf, "fun_eval.attr_value");
+    mush_free(tbuf, "fun_eval.attr_value");
     return;
   } else if (a || !Can_Examine(executor, thing)) {
     safe_str(T(e_atrperm), buff, bp);
@@ -414,7 +405,7 @@ FUNCTION(fun_edefault)
     add_check("fun_edefault.attr_value");
     process_expression(buff, bp, &sp, thing, executor, executor,
                        PE_DEFAULT, PT_DEFAULT, pe_info);
-    mush_free((Malloc_t) sbuf, "fun_edefault.attr_value");
+    mush_free(sbuf, "fun_edefault.attr_value");
     return;
   }
   /* We couldn't get it. Evaluate args[1] and return it */
@@ -604,7 +595,7 @@ FUNCTION(fun_rnum)
       safe_str(T(e_match), buff, bp);
       break;
     case AMBIGUOUS:
-      safe_str(T("#-1 AMBIGUOUS MATCH"), buff, bp);
+      safe_str("#-2", buff, bp);
       break;
     default:
       safe_dbref(thing, buff, bp);
@@ -840,7 +831,7 @@ FUNCTION(fun_entrances)
   dbref counter;
   dbref entrance;
   int found;
-  int exd, td, pd, rd;          /* what we're looking for */
+  int types = 0;
   char *p;
   int controlswhere = 0;
 
@@ -855,7 +846,6 @@ FUNCTION(fun_entrances)
     safe_str(T("#-1 INVALID LOCATION"), buff, bp);
     return;
   }
-  exd = td = pd = rd = 0;
   if (nargs > 1) {
     if (!args[1] || !*args[1]) {
       safe_str(T("#-1 INVALID SECOND ARGUMENT"), buff, bp);
@@ -866,23 +856,23 @@ FUNCTION(fun_entrances)
       switch (*p) {
       case 'a':
       case 'A':
-        exd = td = pd = rd = 1;
+        types = NOTYPE;
         break;
       case 'e':
       case 'E':
-        exd = 1;
+        types |= TYPE_EXIT;
         break;
       case 't':
       case 'T':
-        td = 1;
+        types |= TYPE_THING;
         break;
       case 'p':
       case 'P':
-        pd = 1;
+        types |= TYPE_PLAYER;
         break;
       case 'r':
       case 'R':
-        rd = 1;
+        types |= TYPE_ROOM;
         break;
       default:
         safe_str(T("#-1 INVALID SECOND ARGUMENT"), buff, bp);
@@ -891,9 +881,9 @@ FUNCTION(fun_entrances)
       p++;
     }
   }
-  if (!exd && !td && !pd && !rd) {
-    exd = td = pd = rd = 1;
-  }
+  if (!types)
+    types = NOTYPE;
+
   if (nargs > 2) {
     if (is_integer(args[2])) {
       low = parse_integer(args[2]);
@@ -928,9 +918,7 @@ FUNCTION(fun_entrances)
   found = 0;
   for (counter = low; counter <= high; counter++) {
     if (GoodObject(counter)) {
-      if ((exd && IsExit(counter)) ||
-          (td && IsThing(counter)) ||
-          (pd && IsPlayer(counter)) || (rd && IsRoom(counter))) {
+      if (types & Typeof(counter)) {
         if (Mobile(counter))
           entrance = Home(counter);
         else
@@ -1008,7 +996,7 @@ FUNCTION(fun_visible)
    * then we want to know about the whole object; otherwise, we're
    * just interested in a single attribute.
    * If we encounter an error, we return 0 rather than an error
-   * code, since if it doesn't exist, it obviously can't see 
+   * code, since if it doesn't exist, it obviously can't see
    * anything or be seen.
    */
 
@@ -1062,8 +1050,7 @@ FUNCTION(fun_type)
     break;
   default:
     safe_str("WEIRD OBJECT", buff, bp);
-    do_rawlog(LT_ERR, T("WARNING: Weird object #%d (type %d)\n"), it,
-              Typeof(it));
+    do_rawlog(LT_ERR, "WARNING: Weird object #%d (type %d)\n", it, Typeof(it));
   }
 }
 
@@ -1146,44 +1133,60 @@ FUNCTION(fun_hastype)
 FUNCTION(fun_orflags)
 {
   dbref it = match_thing(executor, args[0]);
-  if (!strcmp(called_as, "ORPOWERS"))
-    safe_boolean(flaglist_check("POWER", executor, it, args[1], 0), buff, bp);
+  int hasflag;
+  hasflag = flaglist_check("FLAG", executor, it, args[1], 0);
+  if (hasflag == -1)
+    safe_str(T("#-1 INVALID FLAG"), buff, bp);
   else
-    safe_boolean(flaglist_check("FLAG", executor, it, args[1], 0), buff, bp);
+    safe_boolean(hasflag, buff, bp);
 }
 
 /* ARGSUSED */
 FUNCTION(fun_andflags)
 {
   dbref it = match_thing(executor, args[0]);
-  if (!strcmp(called_as, "ANDPOWERS"))
-    safe_boolean(flaglist_check("POWER", executor, it, args[1], 1), buff, bp);
+  int hasflag;
+  hasflag = flaglist_check("FLAG", executor, it, args[1], 1);
+  if (hasflag == -1)
+    safe_str(T("#-1 INVALID FLAG"), buff, bp);
   else
-    safe_boolean(flaglist_check("FLAG", executor, it, args[1], 1), buff, bp);
+    safe_boolean(hasflag, buff, bp);
 }
 
 /* ARGSUSED */
 FUNCTION(fun_orlflags)
 {
   dbref it = match_thing(executor, args[0]);
+  int hasflag;
   if (!strcmp(called_as, "ORLPOWERS"))
-    safe_boolean(flaglist_check_long("POWER", executor, it, args[1], 0), buff,
-                 bp);
+    hasflag = flaglist_check_long("POWER", executor, it, args[1], 0);
   else
-    safe_boolean(flaglist_check_long("FLAG", executor, it, args[1], 0), buff,
-                 bp);
+    hasflag = flaglist_check_long("FLAG", executor, it, args[1], 0);
+  if (hasflag == -1)
+    if (!strcmp(called_as, "ORLPOWERS"))
+      safe_str(T("#-1 INVALID POWER"), buff, bp);
+    else
+      safe_str(T("#-1 INVALID FLAG"), buff, bp);
+  else
+    safe_boolean(hasflag, buff, bp);
 }
 
 /* ARGSUSED */
 FUNCTION(fun_andlflags)
 {
   dbref it = match_thing(executor, args[0]);
+  int hasflag;
   if (!strcmp(called_as, "ANDLPOWERS"))
-    safe_boolean(flaglist_check_long("POWER", executor, it, args[1], 1), buff,
-                 bp);
+    hasflag = flaglist_check_long("POWER", executor, it, args[1], 1);
   else
-    safe_boolean(flaglist_check_long("FLAG", executor, it, args[1], 1), buff,
-                 bp);
+    hasflag = flaglist_check_long("FLAG", executor, it, args[1], 1);
+  if (hasflag == -1)
+    if (!strcmp(called_as, "ANDLPOWERS"))
+      safe_str(T("#-1 INVALID POWER"), buff, bp);
+    else
+      safe_str(T("#-1 INVALID FLAG"), buff, bp);
+  else
+    safe_boolean(hasflag, buff, bp);
 }
 
 static lock_type
@@ -1198,13 +1201,30 @@ get_locktype(char *str)
   return upcasestr(str);
 }
 
+extern lock_list lock_types[];
 /* ARGSUSED */
 FUNCTION(fun_locks)
 {
-  dbref thing = match_thing(executor, args[0]);
+  dbref thing;
   lock_list *ll;
   const lock_list *p;
-  int first = 1;
+  bool first = 1;
+
+  if (nargs == 0) {
+    /* List all builtin lock names */
+    int n;
+
+    for (n = 0; lock_types[n].type; n++) {
+      if (!first)
+        safe_chr(' ', buff, bp);
+      else
+        first = 0;
+      safe_str(lock_types[n].type, buff, bp);
+    }
+    return;
+  }
+
+  thing = match_thing(executor, args[0]);
 
   if (!GoodObject(thing)) {
     safe_str(T(e_notvis), buff, bp);
@@ -1263,11 +1283,11 @@ FUNCTION(fun_lockflags)
         safe_str(lock_flags(ll), buff, bp);
       return;
     } else {
-      safe_str("#-1 NO SUCH LOCK", buff, bp);
+      safe_str(T("#-1 NO SUCH LOCK"), buff, bp);
       return;
     }
   }
-  safe_str("#-1 NO SUCH LOCK", buff, bp);
+  safe_str(T("#-1 NO SUCH LOCK"), buff, bp);
 }
 
 /* ARGSUSED */
@@ -1378,6 +1398,32 @@ FUNCTION(fun_elock)
 }
 
 /* ARGSUSED */
+FUNCTION(fun_testlock)
+{
+  dbref victim = match_thing(executor, args[1]);
+  boolexp elock = TRUE_BOOLEXP;
+
+  elock = parse_boolexp(executor, args[0], "Search");
+
+  if (elock == TRUE_BOOLEXP) {
+    safe_str(T("#-1 INVALID BOOLEXP"), buff, bp);
+    return;
+  }
+
+  if (!GoodObject(victim)) {
+    safe_str("#-1", buff, bp);
+    return;
+  }
+  if (Can_Locate(executor, victim)) {
+    safe_boolean(eval_boolexp(victim, elock, executor), buff, bp);
+  } else {
+    safe_str("#-1", buff, bp);
+  }
+  free_boolexp(elock);
+  return;
+}
+
+/* ARGSUSED */
 FUNCTION(fun_findable)
 {
   dbref obj = match_thing(executor, args[0]);
@@ -1428,8 +1474,6 @@ FUNCTION(fun_ctime)
 
   if (!GoodObject(it) || IsGarbage(it))
     safe_str(T(e_notvis), buff, bp);
-  else if (!Can_Examine(executor, it))
-    safe_str(T(e_perm), buff, bp);
   else
     safe_str(show_time(CreTime(it), utc), buff, bp);
 }
@@ -1440,8 +1484,6 @@ FUNCTION(fun_csecs)
 
   if (!GoodObject(it) || IsGarbage(it))
     safe_str(T(e_notvis), buff, bp);
-  else if (!Can_Examine(executor, it))
-    safe_str(T(e_perm), buff, bp);
   else
     safe_integer((intmax_t) CreTime(it), buff, bp);
 }
@@ -1650,7 +1692,7 @@ FUNCTION(fun_money)
   /* If the thing in question has unlimited money, respond with the
    * max money possible. We don't use the NoPay macro, though, because
    * we want to return the amount of money stored in an object, even
-   * if its owner is no_pay. Softcode can check money(owner(XX)) if 
+   * if its owner is no_pay. Softcode can check money(owner(XX)) if
    * they want to allow objects to pay like their owners.
    */
   if (has_power_by_name(it, "NO_PAY", NOTYPE))
@@ -1794,38 +1836,19 @@ FUNCTION(fun_pmatch)
 {
   dbref target;
 
-  if (*args[0] == '*')
-    target = lookup_player(args[0] + 1);
-  else if (*args[0] == NUMBER_TOKEN) {
-    target = parse_objid(args[0]);
-    if (!(GoodObject(target) && IsPlayer(target))) {
-      notify(executor, T("No match."));
-      safe_str("#-1", buff, bp);
-      return;
-    } else {
-      safe_dbref(target, buff, bp);
-      return;
-    }
-  } else
-    target = lookup_player(args[0]);
-  if (target == NOTHING) {
-    if (*args[0] == '*')
-      target = visible_short_page(executor, args[0] + 1);
-    else
-      target = visible_short_page(executor, args[0]);
-  }
+  target =
+    match_result(executor, args[0], TYPE_PLAYER,
+                 MAT_PMATCH | MAT_TYPE | MAT_ABSOLUTE);
+  /* Not using MAT_NOISY, as #-1 gives a different error message */
   switch (target) {
   case NOTHING:
     notify(executor, T("No match."));
-    safe_str("#-1", buff, bp);
     break;
   case AMBIGUOUS:
     notify(executor, T("I'm not sure who you mean."));
-    safe_str("#-2", buff, bp);
     break;
-  default:
-    safe_dbref(target, buff, bp);
   }
+  safe_dbref(target, buff, bp);
 }
 
 /* ARGUSED */
@@ -1836,6 +1859,18 @@ FUNCTION(fun_namelist)
   char *current;
   dbref target;
   const char *start;
+  int report = 0;
+  ufun_attrib ufun;
+  char *wenv[2];
+
+  if (nargs > 1 && args[1] && *args[1]) {
+    if (fetch_ufun_attrib(args[1], executor, &ufun, 1)) {
+      report = 1;
+    } else {
+      safe_str(ufun.errmess, buff, bp);
+      return;
+    }
+  }
 
   start = args[0];
   while (start && *start) {
@@ -1848,12 +1883,14 @@ FUNCTION(fun_namelist)
     target = lookup_player(current);
     if (!GoodObject(target))
       target = visible_short_page(executor, current);
-    if (target == NOTHING) {
-      safe_str("#-1", buff, bp);
-    } else if (target == AMBIGUOUS) {
-      safe_str("#-2", buff, bp);
-    } else {
-      safe_dbref(target, buff, bp);
+    safe_dbref(target, buff, bp);
+    if (target == NOTHING || target == AMBIGUOUS) {
+      if (report) {
+        wenv[0] = current;
+        wenv[1] = unparse_dbref(target);
+        if (call_ufun(&ufun, wenv, 2, NULL, executor, enactor, pe_info))
+          report = 0;
+      }
     }
   }
 }
@@ -1865,9 +1902,7 @@ FUNCTION(fun_locate)
   int pref_type;
   dbref item, loc;
   char *p;
-  int keys = 0;
   int ambig_ok = 0;
-  int force_type = 0;
   long match_flags = 0;
 
   /* find out what we're matching in relation to */
@@ -1901,10 +1936,10 @@ FUNCTION(fun_locate)
       pref_type |= TYPE_THING;
       break;
     case 'L':
-      keys = 1;
+      match_flags |= MAT_CHECK_KEYS;
       break;
     case 'F':
-      force_type = 1;
+      match_flags |= MAT_TYPE;
       break;
     case '*':
       match_flags |= MAT_EVERYTHING;
@@ -1942,9 +1977,14 @@ FUNCTION(fun_locate)
     case 'z':
       match_flags |= MAT_ENGLISH;
       break;
+    case 'x':
+      match_flags |= MAT_EXACT;
+      break;
     case 'X':
       ambig_ok = 1;             /* okay to pick last match */
       break;
+    case ' ':
+      break;                    /* skip over spaces */
     default:
       notify_format(executor, T("I don't understand switch '%c'."), *p);
       break;
@@ -1953,8 +1993,8 @@ FUNCTION(fun_locate)
   if (!pref_type)
     pref_type = NOTYPE;
 
-  if (keys)
-    match_flags = MAT_CHECK_KEYS;
+  if (!(match_flags & ~(MAT_CHECK_KEYS | MAT_TYPE | MAT_EXACT)))
+    match_flags |= MAT_EVERYTHING;
 
   /* report the results */
   if (!ambig_ok)
@@ -1964,11 +2004,6 @@ FUNCTION(fun_locate)
 
   if (!GoodObject(item)) {
     safe_dbref(item, buff, bp);
-    return;
-  }
-
-  if (force_type && !(Typeof(item) & pref_type)) {
-    safe_dbref(NOTHING, buff, bp);
     return;
   }
 

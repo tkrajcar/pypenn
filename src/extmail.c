@@ -13,7 +13,7 @@
  * Sending:
  *   @mail[/sendswitch] player-list = message
  *     sendswitches: /silent, /urgent
- *     player-list is a space-separated list of players, aliases, or msg#'s 
+ *     player-list is a space-separated list of players, aliases, or msg#'s
  *     to reply to. Players can be names or dbrefs. Aliases start with *
  * Reading/Handling:
  *   @mail[/readswitch] [msg-list [= target]]
@@ -40,17 +40,17 @@
  *  As of pl11, extmail.c maintains mail as a sorted linked list, sorted
  * by recipient and order of receipt. This makes sending mail less
  * efficient (because you have to scan the list to figure out where to
- * insert), but reading/checking/deleting more efficient, 
+ * insert), but reading/checking/deleting more efficient,
  * because once you've found where the player's mail starts, you just
- * read from there. 
+ * read from there.
  *  That wouldn't be so exciting unless there was a fast way to find
  * where a player's mail chain started. Fortunately, there is. We
  * record that information for connected players when they connect,
  * on their descriptor. So, when connected players do reading/etc,
  * it's O(1). Sending to a connected player is O(1). Sending to an
- * unconnected player still requires scanning (O(n)), but you send once, 
+ * unconnected player still requires scanning (O(n)), but you send once,
  * and read/list/delete etc, multiple times.
- *  And just to make the sending to disconnected players faster, 
+ *  And just to make the sending to disconnected players faster,
  * instead of scanning the whole maildb to find the insertion point,
  * we start the scan from the chain of the connected player with the
  * closest db# to the target player. This scales up very well.
@@ -230,13 +230,13 @@ get_sender(MAIL *mp, int full)
   static char tbuf1[BUFFER_LEN], *bp;
   bp = tbuf1;
   if (!GoodObject(mp->from))
-    safe_str("!Purged!", tbuf1, &bp);
+    safe_str(T("!Purged!"), tbuf1, &bp);
   else if (!was_sender(mp->from, mp))
-    safe_str("!Purged!", tbuf1, &bp);
+    safe_str(T("!Purged!"), tbuf1, &bp);
   else if (IsPlayer(mp->from) || !full)
     safe_str(Name(mp->from), tbuf1, &bp);
   else
-    safe_format(tbuf1, &bp, "%s (owner: %s)", Name(mp->from),
+    safe_format(tbuf1, &bp, T("%s (owner: %s)"), Name(mp->from),
                 Name(Owner(mp->from)));
   *bp = '\0';
   return tbuf1;
@@ -254,6 +254,16 @@ was_sender(dbref player, MAIL *mp)
     return 1;
   /* Succeed if and only if the creation times match. */
   return (mp->from_ctime == CreTime(player));
+}
+
+/** Check if player can use the @mail command without sending an error
+ *  message. This is purely for use when forced by bsd.c so it won't send
+ *  "Guests can't do that" to guests if @mail is noguest.
+ */
+int
+can_mail(dbref player)
+{
+  return command_check_byname_quiet(player, "@MAIL");
 }
 
 /** Change folders or rename a folder.
@@ -419,7 +429,7 @@ do_mail_flags(dbref player, const char *msglist, mail_flag flag, bool negate)
             }
           } else
             notify_format(player,
-                          "MAIL: Msg #%d:%d %s.", Folder(mp),
+                          "MAIL: Msg #%d:%d %s.", (int) Folder(mp),
                           i[Folder(mp)], negate ? "untagged" : "tagged");
           break;
         case M_CLEARED:
@@ -435,12 +445,12 @@ do_mail_flags(dbref player, const char *msglist, mail_flag flag, bool negate)
               notify_format(player,
                             T
                             ("MAIL: Unread Msg #%d:%d cleared! Use @mail/unclear %d:%d to recover."),
-                            Folder(mp), i[Folder(mp)], Folder(mp),
+                            (int) Folder(mp), i[Folder(mp)], (int) Folder(mp),
                             i[Folder(mp)]);
             } else {
               notify_format(player,
                             (negate ? T("MAIL: Msg #%d:%d uncleared.") :
-                             T("MAIL: Msg #%d:%d cleared.")), Folder(mp),
+                             T("MAIL: Msg #%d:%d cleared.")), (int) Folder(mp),
                             i[Folder(mp)]);
             }
           }
@@ -503,7 +513,7 @@ do_mail_file(dbref player, char *msglist, char *folder)
         } else
           notify_format(player,
                         T("MAIL: Msg %d:%d filed in folder %d [%s]"),
-                        origfold, i[origfold], foldernum,
+                        (int) origfold, i[origfold], foldernum,
                         get_folder_name(player, foldernum));
       }
     }
@@ -548,8 +558,8 @@ do_mail_read(dbref player, char *msglist)
           notify_noenter(player, open_tag("SAMP"));
           snprintf(folderheader, BUFFER_LEN,
                    "%c%cA XCH_HINT=\"List messages in this folder\" XCH_CMD=\"@mail/list %d:1-\"%c%s%c%c/A%c",
-                   TAG_START, MARKUP_HTML, Folder(mp), TAG_END, T("Folder:"),
-                   TAG_START, MARKUP_HTML, TAG_END);
+                   TAG_START, MARKUP_HTML, (int) Folder(mp), TAG_END,
+                   T("Folder:"), TAG_START, MARKUP_HTML, TAG_END);
         } else
           mush_strncpy(folderheader, T("Folder:"), BUFFER_LEN);
         notify(player, DASH_LINE);
@@ -560,9 +570,9 @@ do_mail_read(dbref player, char *msglist)
                       tbuf1, ((*tbuf1 != '!') && IsPlayer(mp->from)
                               && Connected(mp->from)
                               && (!hidden(mp->from)
-                                  || Priv_Who(player))) ? " (Conn)" : "      ",
-                      show_time(mp->time, 0), folderheader, Folder(mp),
-                      i[Folder(mp)], status_string(mp));
+                                  || Priv_Who(player))) ? T(" (Conn)") :
+                      "      ", show_time(mp->time, 0), folderheader,
+                      (int) Folder(mp), i[Folder(mp)], status_string(mp));
         notify_format(player, T("Subject: %s"), get_subject(mp));
         notify(player, DASH_LINE);
         if (SUPPORT_PUEBLO)
@@ -613,7 +623,7 @@ do_mail_list(dbref player, const char *msglist)
   notify_format(player,
                 T
                 ("---------------------------  MAIL (folder %2d)  ------------------------------"),
-                folder);
+                (int) folder);
   for (mp = find_exact_starting_point(player); mp && (mp->to == player);
        mp = mp->next) {
     if ((mp->to == player) && (All(ms) || Folder(mp) == folder)) {
@@ -624,12 +634,13 @@ do_mail_list(dbref player, const char *msglist)
           notify_noenter(player,
                          tprintf
                          ("%c%cA XCH_CMD=\"@mail/read %d:%d\" XCH_HINT=\"Read message %d in folder %d\"%c",
-                          TAG_START, MARKUP_HTML, Folder(mp), i[Folder(mp)],
-                          i[Folder(mp)], Folder(mp), TAG_END));
+                          TAG_START, MARKUP_HTML, (int) Folder(mp),
+                          i[Folder(mp)], i[Folder(mp)], (int) Folder(mp),
+                          TAG_END));
         strcpy(subj, chopstr(get_subject(mp), 28));
         strcpy(sender, chopstr(get_sender(mp, 0), 12));
         notify_format(player, "[%s] %2d:%-3d %c%-12s  %-*s %s",
-                      status_chars(mp), Folder(mp), i[Folder(mp)],
+                      status_chars(mp), (int) Folder(mp), i[Folder(mp)],
                       ((*sender != '!') && (Connected(mp->from) &&
                                             (!hidden(mp->from)
                                              || Priv_Who(player)))
@@ -757,7 +768,7 @@ do_mail_fwd(dbref player, char *msglist, char *tolist)
   folder = AllInFolder(ms) ? player_folder(player) : MSFolder(ms);
   /* Mark the player's last message. This prevents a loop if
    * the forwarding command happens to forward a message back
-   * to the player itself 
+   * to the player itself
    */
   last = mp = find_exact_starting_point(player);
   if (!last) {
@@ -852,9 +863,18 @@ do_mail_send(dbref player, char *tolist, char *message, mail_flag flags,
   }
   sb = sbuf;
   mb = message;                 /* Save the message pointer */
-  while (*message && (i < SUBJECT_LEN) && *message != SUBJECT_COOKIE) {
-    *sb++ = *message++;
-    i++;
+  while (*message && (i < SUBJECT_LEN)) {
+    if (*message == SUBJECT_COOKIE) {
+      if (*(message + 1) == SUBJECT_COOKIE) {
+        *sb++ = *message;
+        message += 2;
+        i += 1;
+      } else
+        break;
+    } else {
+      *sb++ = *message++;
+      i += 1;
+    }
   }
   *sb = '\0';
   if (*message && (*message == SUBJECT_COOKIE)) {
@@ -1015,7 +1035,7 @@ send_mail(dbref player, dbref target, char *subject, char *message,
                         fwd);
       }
     }
-    free((Malloc_t) orig);
+    free(orig);
   }
   if (!silent) {
     if (good)
@@ -1071,7 +1091,7 @@ real_send_mail(dbref player, dbref target, char *subject, char *message,
 
   /* Where do we insert it? After mp, wherever that is.
    * This can return NULL if there are no messages or
-   * if we insert at the head of the list 
+   * if we insert at the head of the list
    */
   mp = find_insertion_point(target);
 
@@ -1105,14 +1125,14 @@ real_send_mail(dbref player, dbref target, char *subject, char *message,
     unsigned char *text;
     newmsg = mush_malloc(BUFFER_LEN, "string");
     if (!newmsg)
-      mush_panic(T("Failed to allocate string in send_mail"));
+      mush_panic("Failed to allocate string in send_mail");
     nm = newmsg;
     safe_str(message, newmsg, &nm);
     if (!nosig && ((a = atr_get_noparent(player, "MAILSIGNATURE")) != NULL)) {
       /* Append the MAILSIGNATURE to the mail - Cordin@Dune's idea */
       buff = mush_malloc(BUFFER_LEN, "string");
       if (!buff)
-        mush_panic(T("Failed to allocate string in send_mail"));
+        mush_panic("Failed to allocate string in send_mail");
       ms = mailsig = safe_atr_value(a);
       bp = buff;
       process_expression(buff, &bp, &ms, player, player, player,
@@ -1202,7 +1222,7 @@ do_mail_nuke(dbref player)
   HEAD = TAIL = NULL;
   mdb_top = 0;
 
-  do_log(LT_ERR, 0, 0, T("** MAIL PURGE ** done by %s(#%d)."),
+  do_log(LT_ERR, 0, 0, "** MAIL PURGE ** done by %s(#%d).",
          Name(player), player);
   notify(player, T("You annihilate the post office. All messages cleared."));
 }
@@ -1278,7 +1298,7 @@ do_mail_debug(dbref player, const char *action, const char *victim)
         slab_free(mail_slab, mp);
       } else if (!GoodObject(mp->from)) {
         /* Oops, it's from a player whose dbref is out of range!
-         * We'll make it appear to be from #0 instead because there's 
+         * We'll make it appear to be from #0 instead because there's
          * no really good choice
          */
         mp->from = 0;
@@ -1345,11 +1365,6 @@ do_mail_stats(dbref player, char *name, enum mail_stats_type full)
   }
   /* this comand is computationally expensive */
 
-  if (!payfor(player, FIND_COST)) {
-    notify_format(player, T("Finding mail stats costs %d %s."), FIND_COST,
-                  (FIND_COST == 1) ? MONEY : MONIES);
-    return;
-  }
   if (target == AMBIGUOUS) {    /* stats for all */
     if (full == MSTATS_COUNT) {
       notify_format(player,
@@ -1749,13 +1764,7 @@ FUNCTION(fun_mailstats)
     notify(executor, T("The post office protects privacy!"));
     return;
   }
-  /* this comand is computationally expensive */
 
-  if (!payfor(executor, FIND_COST)) {
-    notify_format(executor, T("Finding mail stats costs %d %s."), FIND_COST,
-                  (FIND_COST == 1) ? MONEY : MONIES);
-    return;
-  }
   if (target == AMBIGUOUS) {    /* stats for all */
     if (full == 0) {
       /* FORMAT
@@ -1939,7 +1948,7 @@ dump_mail(PENNFILE *fp)
   penn_fputs(EOD, fp);
 
   if (count != mdb_top) {
-    do_log(LT_ERR, 0, 0, T("MAIL: Count of messages is %d, mdb_top is %d."),
+    do_log(LT_ERR, 0, 0, "MAIL: Count of messages is %d, mdb_top is %d.",
            count, mdb_top);
     mdb_top = count;            /* Doesn't help if we forked, but oh well */
   }
@@ -2064,13 +2073,12 @@ load_mail(PENNFILE *fp)
     if (nbuf1[0] == '0' && nbuf1[1] == '\n') {
       char buff[20];
       if (!penn_fgets(buff, sizeof buff, fp))
-        do_rawlog(LT_ERR,
-                  T("MAIL: Missing end-of-dump marker in mail database."));
+        do_rawlog(LT_ERR, "MAIL: Missing end-of-dump marker in mail database.");
       else if (strcmp(buff, (mail_flags & MDBF_NEW_EOD)
                       ? "***END OF DUMP***\n" : "*** END OF DUMP ***\n") == 0)
         return 1;
       else
-        do_rawlog(LT_ERR, T("MAIL: Trailing garbage in the mail database."));
+        do_rawlog(LT_ERR, "MAIL: Trailing garbage in the mail database.");
     }
     return 0;
   }
@@ -2165,7 +2173,7 @@ load_mail(PENNFILE *fp)
       }
       if (!done) {
         /* This is bad */
-        do_rawlog(LT_ERR, T("MAIL: bad code."));
+        do_rawlog(LT_ERR, "MAIL: bad code.");
       }
     }
   }
@@ -2173,18 +2181,17 @@ load_mail(PENNFILE *fp)
   mdb_top = i;
 
   if (i != mail_top) {
-    do_rawlog(LT_ERR, T("MAIL: mail_top is %d, only read in %d messages."),
+    do_rawlog(LT_ERR, "MAIL: mail_top is %d, only read in %d messages.",
               mail_top, i);
   }
   {
     char buff[20];
     if (!penn_fgets(buff, sizeof buff, fp))
-      do_rawlog(LT_ERR,
-                T("MAIL: Missing end-of-dump marker in mail database."));
+      do_rawlog(LT_ERR, "MAIL: Missing end-of-dump marker in mail database.");
     else if (strcmp(buff, (mail_flags & MDBF_NEW_EOD)
                     ? EOD : "*** END OF DUMP ***\n") != 0)
       /* There's still stuff. Icky. */
-      do_rawlog(LT_ERR, T("MAIL: Trailing garbage in the mail database."));
+      do_rawlog(LT_ERR, "MAIL: Trailing garbage in the mail database.");
   }
 
   do_mail_debug(GOD, "fix", "");
@@ -2266,7 +2273,7 @@ add_folder_name(dbref player, int fld, const char *name)
   str = (char *) mush_malloc(BUFFER_LEN, "string");
   tbuf = (char *) mush_malloc(BUFFER_LEN, "string");
   if (!new || !pat || !str || !tbuf)
-    mush_panic(T("Failed to allocate strings in add_folder_name"));
+    mush_panic("Failed to allocate strings in add_folder_name");
 
   if (name && *name)
     snprintf(new, BUFFER_LEN, "%d:%s:%d ", fld, strupper(name), fld);
@@ -2297,11 +2304,11 @@ add_folder_name(dbref player, int fld, const char *name)
   /* put the attrib back */
   (void) atr_add(player, "MAILFOLDERS", res, GOD,
                  AF_WIZARD | AF_NOPROG | AF_LOCKED);
-  mush_free((Malloc_t) res, "replace_string.buff");
-  mush_free((Malloc_t) new, "string");
-  mush_free((Malloc_t) pat, "string");
-  mush_free((Malloc_t) str, "string");
-  mush_free((Malloc_t) tbuf, "string");
+  mush_free(res, "replace_string.buff");
+  mush_free(new, "string");
+  mush_free(pat, "string");
+  mush_free(str, "string");
+  mush_free(tbuf, "string");
 }
 
 static int
@@ -2651,7 +2658,7 @@ sign(int x)
 /* See if we've been given something of the form [f:]m1[-m2]
  * If so, return 1 and set f and mlow and mhigh
  * If not, return 0
- * If msghigh is given as NULL, don't allow ranges 
+ * If msghigh is given as NULL, don't allow ranges
  * Used in parse_msglist, fun_mail and relatives.
  */
 static int

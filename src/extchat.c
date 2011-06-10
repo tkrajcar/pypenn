@@ -168,7 +168,7 @@ onchannel(dbref who, CHAN *ch)
      } \
     } while (0)
 
-/** A macro to test if a channel exists and player's on it, and, 
+/** A macro to test if a channel exists and player's on it, and,
  * if not, to notify. */
 #define test_channel_on(player,name,chan) \
    do { \
@@ -236,7 +236,7 @@ load_chatdb_oldstyle(PENNFILE *fp)
     if (!ch)
       return 0;
     if (!load_channel(fp, ch)) {
-      do_rawlog(LT_ERR, T("Unable to load channel %d."), i);
+      do_rawlog(LT_ERR, "Unable to load channel %d.", i);
       free_channel(ch);
       return 0;
     }
@@ -246,9 +246,9 @@ load_chatdb_oldstyle(PENNFILE *fp)
 
   /* Check for **END OF DUMP*** */
   if (!penn_fgets(buff, sizeof buff, fp))
-    do_rawlog(LT_ERR, T("CHAT: No end-of-dump marker in the chat database."));
+    do_rawlog(LT_ERR, "CHAT: No end-of-dump marker in the chat database.");
   else if (strcmp(buff, EOD) != 0)
-    do_rawlog(LT_ERR, T("CHAT: Trailing garbage in the chat database."));
+    do_rawlog(LT_ERR, "CHAT: Trailing garbage in the chat database.");
 
   return 1;
 }
@@ -270,7 +270,7 @@ load_chatdb(PENNFILE *fp)
 
   i = penn_fgetc(fp);
   if (i == EOF) {
-    do_rawlog(LT_ERR, T("CHAT: Invalid database format!"));
+    do_rawlog(LT_ERR, "CHAT: Invalid database format!");
     longjmp(db_err, 1);
   } else if (i != '+') {
     penn_ungetc(i, fp);
@@ -280,7 +280,7 @@ load_chatdb(PENNFILE *fp)
   i = penn_fgetc(fp);
 
   if (i != 'V') {
-    do_rawlog(LT_ERR, T("CHAT: Invalid database format!"));
+    do_rawlog(LT_ERR, "CHAT: Invalid database format!");
     longjmp(db_err, 1);
   }
 
@@ -290,8 +290,7 @@ load_chatdb(PENNFILE *fp)
 
   if (strcmp(chat_timestamp, db_timestamp))
     do_rawlog(LT_ERR,
-              T
-              ("CHAT: warning: chatdb and game db were saved at different times!"));
+              "CHAT: warning: chatdb and game db were saved at different times!");
 
   /* How many channels? */
   db_read_this_labeled_int(fp, "channels", &num_channels);
@@ -304,7 +303,7 @@ load_chatdb(PENNFILE *fp)
     if (!ch)
       return 0;
     if (!load_labeled_channel(fp, ch, flags)) {
-      do_rawlog(LT_ERR, T("Unable to load channel %d."), i);
+      do_rawlog(LT_ERR, "Unable to load channel %d.", i);
       free_channel(ch);
       return 0;
     }
@@ -314,9 +313,9 @@ load_chatdb(PENNFILE *fp)
 
   /* Check for **END OF DUMP*** */
   if (!penn_fgets(buff, sizeof buff, fp))
-    do_rawlog(LT_ERR, T("CHAT: No end-of-dump marker in the chat database."));
+    do_rawlog(LT_ERR, "CHAT: No end-of-dump marker in the chat database.");
   else if (strcmp(buff, EOD) != 0)
-    do_rawlog(LT_ERR, T("CHAT: Trailing garbage in the chat database."));
+    do_rawlog(LT_ERR, "CHAT: Trailing garbage in the chat database.");
 
   return 1;
 }
@@ -498,7 +497,7 @@ load_chanusers(PENNFILE *fp, CHAN *ch)
         num++;
     } else {
       /* But be sure to read (and discard) the player's info */
-      do_log(LT_ERR, 0, 0, T("Bad object #%d removed from channel %s"),
+      do_log(LT_ERR, 0, 0, "Bad object #%d removed from channel %s",
              player, ChanName(ch));
       (void) getref(fp);
       (void) getstring_noalloc(fp);
@@ -529,7 +528,7 @@ load_labeled_chanusers(PENNFILE *fp, CHAN *ch)
         num++;
     } else {
       /* But be sure to read (and discard) the player's info */
-      do_log(LT_ERR, 0, 0, T("Bad object #%d removed from channel %s"),
+      do_log(LT_ERR, 0, 0, "Bad object #%d removed from channel %s",
              player, ChanName(ch));
       db_read_this_labeled_int(fp, "flags", &n);
       db_read_this_labeled_string(fp, "title", &tmp);
@@ -855,7 +854,7 @@ save_chanuser(PENNFILE *fp, CHANUSER *user)
  * Some utility functions:
  *  find_channel - given a name and a player, return a channel
  *  find_channel_partial - given a name and a player, return
- *    the first channel that matches name 
+ *    the first channel that matches name
  *  find_channel_partial_on - given a name and a player, return
  *    the first channel that matches name that player is on.
  *  onchannel - is player on channel?
@@ -863,7 +862,7 @@ save_chanuser(PENNFILE *fp, CHANUSER *user)
 
 /** Removes markup and <>'s in channel names.
  * \param name The name to normalize.
- * \retval a pointer to a static buffer with the normalized name. 
+ * \retval a pointer to a static buffer with the normalized name.
  */
 static char *
 normalize_channel_name(const char *name)
@@ -1032,9 +1031,9 @@ list_partial_matches(dbref player, const char *name, enum chan_match_type type)
 
 /** Attempt to match a channel name for a player.
  * Given name and a chan pointer, set chan pointer to point to
- * channel if found and player is on the channel (NULL otherwise), 
- * and return an indication of how good the match was. If the player is 
- * not able to see the channel, fail to match. If the match is ambiguous, 
+ * channel if found and player is on the channel (NULL otherwise),
+ * and return an indication of how good the match was. If the player is
+ * not able to see the channel, fail to match. If the match is ambiguous,
  * return the first channel matched.
  * \param name name of channel to find.
  * \param chan pointer to address of channel structure to return.
@@ -1081,9 +1080,9 @@ find_channel_partial_on(const char *name, CHAN **chan, dbref player)
 
 /** Attempt to match a channel name for a player.
  * Given name and a chan pointer, set chan pointer to point to
- * channel if found and player is NOT on the channel (NULL otherwise), 
- * and return an indication of how good the match was. If the player is 
- * not able to see the channel, fail to match. If the match is ambiguous, 
+ * channel if found and player is NOT on the channel (NULL otherwise),
+ * and return an indication of how good the match was. If the player is
+ * not able to see the channel, fail to match. If the match is ambiguous,
  * return the first channel matched.
  * \param name name of channel to find.
  * \param chan pointer to address of channel structure to return.
@@ -1241,7 +1240,7 @@ do_channel(dbref player, const char *name, const char *target, const char *com)
         /* Wizards can override join locks */
         notify(player,
                T
-               ("CHAT: Warning: Target does not meet channel join permissions (joining anyway)"));
+               ("CHAT: Warning: Target does not meet channel join permissions! (joining anyway)"));
       } else {
         notify(player, T("Permission to join denied."));
         return;
@@ -1259,7 +1258,7 @@ do_channel(dbref player, const char *name, const char *target, const char *com)
       if (!Channel_Quiet(chan) && !DarkLegal(victim)) {
         channel_send(chan, victim,
                      CB_CHECKQUIET | CB_PRESENCE | CB_POSE,
-                     T("has joined this channel"));
+                     T("has joined this channel."));
       }
     } else {
       notify_format(player,
@@ -1284,7 +1283,7 @@ do_channel(dbref player, const char *name, const char *target, const char *com)
       if (!Channel_Quiet(chan) && !DarkLegal(victim)) {
         channel_send(chan, victim,
                      CB_CHECKQUIET | CB_PRESENCE | CB_POSE,
-                     T("has left this channel"));
+                     T("has left this channel."));
       }
       notify_format(victim,
                     T("CHAT: %s removes you from channel <%s>."),
@@ -1345,7 +1344,7 @@ channel_join_self(dbref player, const char *name)
       /* Wizards can override join locks */
       notify(player,
              T
-             ("CHAT: Warning: You don't meet channel join permissions (joining anyway)"));
+             ("CHAT: Warning: You don't meet channel join permissions! (joining anyway)"));
     } else {
       notify(player, T("Permission to join denied."));
       return;
@@ -1358,7 +1357,7 @@ channel_join_self(dbref player, const char *name)
     if (!Channel_Quiet(chan) && !DarkLegal(player))
       channel_send(chan, player,
                    CB_CHECKQUIET | CB_PRESENCE | CB_POSE,
-                   T("has joined this channel"));
+                   T("has joined this channel."));
   } else {
     /* Should never happen */
     notify_format(player,
@@ -1382,7 +1381,7 @@ channel_leave_self(dbref player, const char *name)
   case CMATCH_NONE:
     if (find_channel_partial_off(name, &chan, player)
         && Chan_Can_See(chan, player))
-      notify_format(player, T("CHAT: You are not on channel <%s>"),
+      notify_format(player, T("CHAT: You are not on channel <%s>."),
                     ChanName(chan));
     else
       notify(player, T("CHAT: I don't recognize that channel."));
@@ -1400,7 +1399,7 @@ channel_leave_self(dbref player, const char *name)
     if (!Channel_Quiet(chan) && !DarkLegal(player))
       channel_send(chan, player,
                    CB_CHECKQUIET | CB_PRESENCE | CB_POSE,
-                   T("has left this channel"));
+                   T("has left this channel."));
     notify_format(player, T("CHAT: You leave channel <%s>."), ChanName(chan));
   } else {
     /* Should never happen */
@@ -1789,7 +1788,7 @@ do_chan_admin(dbref player, char *name, const char *perms, int flag)
     /* make sure the channel name is unique */
     if (find_channel(perms, &temp, GOD)) {
       /* But allow renaming a channel to a differently-cased version of
-       * itself 
+       * itself
        */
       if (temp != chan) {
         notify(player, T("The channel needs a more unique new name."));
@@ -1805,7 +1804,7 @@ do_chan_admin(dbref player, char *name, const char *perms, int flag)
     remove_channel(chan);
     strcpy(ChanName(chan), perms);
     insert_channel(&chan);
-    snprintf(announcebuff, BUFFER_LEN, T("has renamed %s to %s"),
+    snprintf(announcebuff, BUFFER_LEN, T("has renamed %s to %s."),
              old, ChanName(chan));
     channel_send(chan, player,
                  CB_CHECKQUIET | CB_PRESENCE | CB_POSE, announcebuff);
@@ -1919,7 +1918,7 @@ do_chan_user_flags(dbref player, char *name, const char *isyn, int flag,
 
   /* channel loop */
   do {
-    /* If we have a channel list at the start, 
+    /* If we have a channel list at the start,
      * that means they didn't gave us a channel name,
      * so we now figure out c. */
     if (p != NULL) {
@@ -2168,7 +2167,7 @@ list_cuflags(CHANUSER *u, int verbose)
 /* ARGSUSED */
 FUNCTION(fun_cflags)
 {
-  /* With one channel arg, returns list of set flags, as per 
+  /* With one channel arg, returns list of set flags, as per
    * do_channel_list. Sample output: PQ, Oo, etc.
    * With two args (channel,object) return channel-user flags
    * for that object on that channel (a subset of GQH).
@@ -2318,7 +2317,7 @@ FUNCTION(fun_ctitle)
    * either you must either be able to examine <object>, or
    * <object> must not be hidden, and either
    *   a) You must be on <channel>, or
-   *   b) You must pass the join-lock 
+   *   b) You must pass the join-lock
    */
   CHAN *c;
   CHANUSER *u;
@@ -2441,7 +2440,7 @@ FUNCTION(fun_cowner)
 
 }
 
-/* Remove all players from a channel, notifying them. This is the 
+/* Remove all players from a channel, notifying them. This is the
  * utility routine for handling it. The command @channel/wipe
  * calls do_chan_wipe, below
  */
@@ -2571,7 +2570,7 @@ do_chan_chown(dbref player, const char *name, const char *newowner)
     return;
   }
   /* We refund the original owner's money, but don't charge the
-   * new owner. 
+   * new owner.
    */
   chan_chown(c, victim);
   notify_format(player,
@@ -2580,7 +2579,7 @@ do_chan_chown(dbref player, const char *name, const char *newowner)
   return;
 }
 
-/** Chown all of a player's channels. 
+/** Chown all of a player's channels.
  * This function changes ownership of all of a player's channels. It's
  * usually used before destroying the player.
  * \param old dbref of old channel owner.
@@ -2772,7 +2771,8 @@ do_chan_decompile(dbref player, const char *name, int brief)
       if (!(See_All(player) || Chan_Can_Modify(c, player)
             || (ChanCreator(c) == player))) {
         if (Chan_Can_See(c, player))
-          notify_format(player, T("CHAT: No permission to decompile <%s>"),
+          notify_format(player,
+                        T("CHAT: You don't have permission to decompile <%s>."),
                         ChanName(c));
         continue;
       }
@@ -2781,8 +2781,8 @@ do_chan_decompile(dbref player, const char *name, int brief)
       notify_format(player, "@channel/chown %s = %s", ChanName(c),
                     Name(ChanCreator(c)));
       if (ChanMogrifier(c) != NOTHING) {
-        notify_format(player, "@channel/mogrifier %s = %s", ChanName(c),
-                      Name(ChanMogrifier(c)));
+        notify_format(player, "@channel/mogrifier %s = #%d", ChanName(c),
+                      ChanMogrifier(c));
       }
       if (ChanModLock(c) != TRUE_BOOLEXP)
         notify_format(player, "@clock/mod %s = %s", ChanName(c),
@@ -2858,6 +2858,9 @@ do_channel_who(dbref player, CHAN *chan)
 FUNCTION(fun_cwho)
 {
   int first = 1;
+  int matchcond = 0;
+  int priv = 0;
+  int show;
   CHAN *chan = NULL;
   CHANUSER *u;
   dbref who;
@@ -2871,6 +2874,19 @@ FUNCTION(fun_cwho)
     return;
   default:
     break;
+  }
+
+  if (nargs == 2) {
+    if (!strcasecmp(args[1], "on"))
+      matchcond = 0;
+    else if (!strcasecmp(args[1], "off"))
+      matchcond = 1;
+    else if (!strcasecmp(args[1], "all"))
+      matchcond = 2;
+    else {
+      safe_str(T("#-1 INVALID ARGUMENT"), buff, bp);
+      return;
+    }
   }
 
   /* Feh. We need to do some sort of privilege checking, so that
@@ -2890,16 +2906,25 @@ FUNCTION(fun_cwho)
     safe_str(T("#-1 NO PERMISSIONS FOR CHANNEL"), buff, bp);
     return;
   }
+
+  priv = Priv_Who(executor);
+
   for (u = ChanUsers(chan); u; u = u->next) {
     who = CUdbref(u);
-    if ((IsThing(who) || Connected(who)) &&
-        (!Chanuser_Hide(u) || Priv_Who(executor))) {
-      if (first)
-        first = 0;
+    show = 1;
+    if (!IsThing(who) && matchcond != 2) {
+      if (matchcond)
+        show = !Connected(who) || (Chanuser_Hide(u) && !priv);
       else
-        safe_chr(' ', buff, bp);
-      safe_dbref(who, buff, bp);
+        show = Connected(who) && (!Chanuser_Hide(u) || priv);
     }
+    if (!show)
+      continue;
+    if (first)
+      first = 0;
+    else
+      safe_chr(' ', buff, bp);
+    safe_dbref(who, buff, bp);
   }
 }
 
@@ -3117,7 +3142,7 @@ FUNCTION(fun_clock)
     safe_str(T("#-1 NO SUCH CHANNEL"), buff, bp);
     return;
   case CMATCH_AMBIG:
-    safe_str("#-2 AMBIGUOUS CHANNEL MATCH", buff, bp);
+    safe_str(T("#-2 AMBIGUOUS CHANNEL MATCH"), buff, bp);
     return;
   default:
     break;
@@ -3168,7 +3193,7 @@ FUNCTION(fun_clock)
 /* ARGSUSED */
 FUNCTION(fun_cemit)
 {
-  int ns = string_prefix(called_as, "NS");
+  int ns = (string_prefix(called_as, "NS") && Can_Nspemit(executor));
   int flags = PEMIT_SILENT;
   flags |= (ns ? PEMIT_SPOOF : 0);
   if (!command_check_byname(executor, ns ? "@nscemit" : "@cemit") ||
@@ -3311,7 +3336,8 @@ FUNCTION(fun_crecall)
 
 COMMAND(cmd_cemit)
 {
-  int spflags = !strcmp(cmd->name, "@NSCEMIT") ? PEMIT_SPOOF : 0;
+  int spflags = (!strcmp(cmd->name, "@NSCEMIT")
+                 && Can_Nspemit(player) ? PEMIT_SPOOF : 0);
   SPOOF(player, cause, sw);
   if (SW_ISSET(sw, SWITCH_SILENT))
     spflags |= PEMIT_SILENT;
@@ -3388,7 +3414,7 @@ COMMAND(cmd_clock)
   else if (SW_ISSET(sw, SWITCH_HIDE))
     do_chan_lock(player, arg_left, arg_right, CL_HIDE);
   else
-    notify(player, T("You must specify a type of lock"));
+    notify(player, T("You must specify a type of lock!"));
 }
 
 /** Find the next player on a channel to notify.
@@ -3435,10 +3461,9 @@ mogrify(dbref mogrifier, char *attrname,
         dbref player, int numargs, char *argv[], char *orig)
 {
   static char buff[BUFFER_LEN];
-  const char *wenv[10];
+  const char *wenv[10] = { 0 };
   int i;
   buff[0] = '\0';
-  memset(wenv, 0, sizeof(wenv));
   for (i = 0; i < numargs; i++) {
     wenv[i] = argv[i];
   }
@@ -3617,7 +3642,7 @@ channel_send(CHAN *channel, dbref player, int flags, const char *origmessage)
   }
   *bp = '\0';
 
-  // @chatformat 
+  // @chatformat
   if (flags & CB_PRESENCE) {
     snprintf(title, BUFFER_LEN, "%s", message);
     snprintf(message, BUFFER_LEN, "%s %s", Name(player), title);

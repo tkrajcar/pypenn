@@ -2,7 +2,7 @@
  * \file funufun.c
  *
  * \brief Evaluation and user-function functions for mushcode.
- * 
+ *
  *
  */
 
@@ -86,7 +86,7 @@ FUNCTION(fun_objeval)
   char const *p;
   dbref obj;
 
-  /* First, we evaluate our first argument so people can use 
+  /* First, we evaluate our first argument so people can use
    * functions on it.
    */
   s = name;
@@ -179,7 +179,8 @@ FUNCTION(fun_ufun)
   char rbuff[BUFFER_LEN];
   ufun_attrib ufun;
 
-  if (!fetch_ufun_attrib(args[0], executor, &ufun, 0)) {
+  if (!fetch_ufun_attrib
+      (args[0], executor, &ufun, (!strcmp(called_as, "ULAMBDA")))) {
     safe_str(T(ufun.errmess), buff, bp);
     return;
   }
@@ -192,15 +193,38 @@ FUNCTION(fun_ufun)
 }
 
 /* ARGSUSED */
-FUNCTION(fun_ulambda)
+FUNCTION(fun_pfun)
 {
+
   char rbuff[BUFFER_LEN];
+  ATTR *a;
+  int pe_flags = PE_UDEFAULT;
+  dbref parent;
   ufun_attrib ufun;
 
-  if (!fetch_ufun_attrib(args[0], executor, &ufun, 1)) {
-    safe_str(T(ufun.errmess), buff, bp);
+  parent = Parent(executor);
+
+  if (!GoodObject(parent))
     return;
-  }
+
+  /* This is a stripped down version of fetch_ufun_attrib that gets
+     the atr value directly from the parent */
+
+  a = atr_get(parent, upcasestr(args[0]));
+  if (!a)
+    return;                     /* no attr */
+
+  if (AF_Internal(a) || AF_Private(a))
+    return;                     /* attr isn't inheritable */
+
+  /* DEBUG attributes */
+  if (AF_Debug(a))
+    pe_flags |= PE_DEBUG;
+
+  ufun.thing = executor;
+  mush_strncpy(ufun.contents, atr_value(a), BUFFER_LEN);
+  ufun.pe_flags = pe_flags;
+  ufun.errmess = (char *) "";
 
   call_ufun(&ufun, args + 1, nargs - 1, rbuff, executor, enactor, pe_info);
 
@@ -209,38 +233,12 @@ FUNCTION(fun_ulambda)
   return;
 }
 
-/* ARGSUSED */
-FUNCTION(fun_ulocal)
-{
-  /* Like fun_ufun, but saves the state of the q0-q9 registers
-   * when called
-   */
-  char *preserve[NUMQ];
-  char rbuff[BUFFER_LEN];
-  ufun_attrib ufun;
-
-  if (!fetch_ufun_attrib(args[0], executor, &ufun, 0)) {
-    safe_str(T(ufun.errmess), buff, bp);
-    return;
-  }
-
-  /* Save global regs */
-  save_global_regs("ulocal.save", preserve);
-
-  call_ufun(&ufun, args + 1, nargs - 1, rbuff, executor, enactor, pe_info);
-  safe_str(rbuff, buff, bp);
-
-  restore_global_regs("ulocal.save", preserve);
-
-  return;
-}
 
 /* Like fun_ufun, but takes as second argument a default message
- * to use if the attribute isn't there.  If called as uldefault,
- * then preserve registers, too.
+ * to use if the attribute isn't there.
  */
 /* ARGSUSED */
-FUNCTION(fun_uldefault)
+FUNCTION(fun_udefault)
 {
   dbref thing;
   ATTR *attrib;
@@ -249,7 +247,6 @@ FUNCTION(fun_uldefault)
   char mstr[BUFFER_LEN];
   char **xargs;
   int i;
-  char *preserve[NUMQ];
 
   /* find our object and attribute */
   dp = mstr;
@@ -275,12 +272,8 @@ FUNCTION(fun_uldefault)
         *dp = '\0';
       }
     }
-    if (called_as[1] == 'L')
-      save_global_regs("uldefault.save", preserve);
     do_userfn(buff, bp, thing, attrib, nargs - 2, xargs,
               executor, caller, enactor, pe_info, 0);
-    if (called_as[1] == 'L')
-      restore_global_regs("uldefault.save", preserve);
 
     /* Free the xargs */
     if (nargs > 2) {
@@ -293,12 +286,8 @@ FUNCTION(fun_uldefault)
   /* We couldn't get it. Evaluate args[1] and return it */
   sp = args[1];
 
-  if (called_as[1] == 'L')
-    save_global_regs("uldefault.save", preserve);
   process_expression(buff, bp, &sp, executor, caller, enactor,
                      PE_DEFAULT, PT_DEFAULT, pe_info);
-  if (called_as[1] == 'L')
-    restore_global_regs("uldefault.save", preserve);
   return;
 }
 

@@ -29,7 +29,6 @@
 #include "sort.h"
 #include "confmagic.h"
 
-int okay_pemit(dbref player, dbref target);
 static dbref speech_loc(dbref thing);
 void propagate_sound(dbref thing, const char *msg);
 static void do_audible_stuff(dbref loc, dbref *excs, int numexcs,
@@ -253,7 +252,7 @@ do_oemit_list(dbref player, char *list, const char *message, int flags)
     }
   }
 
-  /* Sort the list of rooms to oemit to so we don't oemit to the same           
+  /* Sort the list of rooms to oemit to so we don't oemit to the same
    * room twice */
   qsort((void *) locs, pass[0], sizeof(locs[0]), dbref_comp);
 
@@ -542,6 +541,9 @@ do_pemit(dbref player, const char *arg1, const char *arg2, int flags)
   dbref who;
   int silent, nospoof;
 
+  if (!arg2 || !*arg2)
+    return;
+
   silent = (flags & PEMIT_SILENT) ? 1 : 0;
   nospoof = (flags & PEMIT_SPOOF) ? 0 : 1;
 
@@ -751,13 +753,12 @@ messageformat(dbref player, const char *attribute, dbref enactor, int flags,
  * \param arg2 the message to page.
  * \param cause the object that caused the command to run.
  * \param noeval if 1, page/noeval.
- * \param multipage if 1, a page/list; if 0, a page/blind.
  * \param override if 1, page/override.
  * \param has_eq if 1, the command had an = in it.
  */
 void
 do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
-        int noeval, int multipage, int override, int has_eq)
+        int noeval, int override, int has_eq)
 {
   dbref target;
   const char *message;
@@ -768,8 +769,8 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
   dbref good[100];
   int gcount = 0;
   char *msgbuf, *mb;
-  const char *head;
-  const char *hp = NULL;
+  char *head;
+  char *hp = NULL;
   const char **start;
   char *current;
   int i;
@@ -803,14 +804,14 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
     a = atr_get_noparent(player, "LASTPAGED");
     if (!a || !*((hp = head = safe_atr_value(a)))) {
       notify(player, T("You haven't paged anyone since connecting."));
-      mush_free((Malloc_t) tbuf2, "page_buff");
+      mush_free(tbuf2, "page_buff");
       return;
     }
     if (!message || !*message) {
       notify_format(player, T("You last paged %s."), head);
-      mush_free((Malloc_t) tbuf2, "page_buff");
+      mush_free(tbuf2, "page_buff");
       if (hp)
-        free((Malloc_t) hp);
+        free(hp);
       return;
     }
   }
@@ -820,11 +821,11 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
     mush_panic("Unable to allocate memory in do_page");
 
   if (override && !Pemit_All(player)) {
-    notify(player, "Try again after you get the pemit_all power.");
+    notify(player, T("Try again after you get the pemit_all power."));
     override = 0;
   }
 
-  start = &head;
+  start = (const char **) &head;
   while (head && *head && (gcount < 99)) {
     current = next_in_list(start);
     target = lookup_player(current);
@@ -884,10 +885,10 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
    * anyone, this looks like a spam attack. */
   if (gcount == 99) {
     notify(player, T("You're trying to page too many people at once."));
-    mush_free((Malloc_t) tbuf, "page_buff");
-    mush_free((Malloc_t) tbuf2, "page_buff");
+    mush_free(tbuf, "page_buff");
+    mush_free(tbuf2, "page_buff");
     if (hp)
-      free((Malloc_t) hp);
+      free(hp);
     return;
   }
 
@@ -901,20 +902,10 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
 
   if (!gcount) {
     /* Well, that was a total waste of time. */
-    mush_free((Malloc_t) tbuf, "page_buff");
-    mush_free((Malloc_t) tbuf2, "page_buff");
+    mush_free(tbuf, "page_buff");
+    mush_free(tbuf2, "page_buff");
     if (hp)
-      free((Malloc_t) hp);
-    return;
-  }
-
-  /* Can the player afford to pay for this thing? */
-  if (!payfor(player, PAGE_COST * gcount)) {
-    notify_format(player, T("You don't have enough %s."), MONIES);
-    mush_free((Malloc_t) tbuf, "page_buff");
-    mush_free((Malloc_t) tbuf2, "page_buff");
-    if (hp)
-      free((Malloc_t) hp);
+      free(hp);
     return;
   }
 
@@ -978,13 +969,10 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
 
   /* Figure out the one success message, and send it */
   if (key == 1)
-    notify_format(player, T("Long distance to %s%s: %s%s%s"),
-                  ((gcount > 1) && (!multipage)) ? "(blind) " : "", tbuf2,
+    notify_format(player, T("Long distance to %s: %s%s%s"), tbuf2,
                   Name(player), gap, message);
   else
-    notify_format(player, T("You paged %s%s with '%s'"),
-                  ((gcount > 1) && (!multipage)) ? "(blind) " : "", tbuf2,
-                  message);
+    notify_format(player, T("You paged %s with '%s'"), tbuf2, message);
 
   /* Figure out the 'name' of the player */
   if ((alias = shortalias(player)) && *alias && PAGE_ALIASES)
@@ -998,7 +986,7 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
   /* Build the header */
   if (key == 1) {
     safe_str(T("From afar"), tbuf, &tp);
-    if ((gcount > 1) && (multipage)) {
+    if (gcount > 1) {
       safe_str(T(" (to "), tbuf, &tp);
       safe_str(tbuf2, tbuf, &tp);
       safe_chr(')', tbuf, &tp);
@@ -1009,7 +997,7 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
   } else {
     safe_str(current, tbuf, &tp);
     safe_str(T(" pages"), tbuf, &tp);
-    if ((gcount > 1) && (multipage)) {
+    if (gcount > 1) {
       safe_chr(' ', tbuf, &tp);
       safe_str(tbuf2, tbuf, &tp);
     }
@@ -1020,12 +1008,10 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
   *tp = '\0';
 
   tp2 = tbuf2;
-  if (multipage) {
-    for (i = 0; i < gcount; i++) {
-      if (i)
-        safe_chr(' ', tbuf2, &tp2);
-      safe_dbref(good[i], tbuf2, &tp2);
-    }
+  for (i = 0; i < gcount; i++) {
+    if (i)
+      safe_chr(' ', tbuf2, &tp2);
+    safe_dbref(good[i], tbuf2, &tp2);
   }
   *tp2 = '\0';
   for (i = 0; i < gcount; i++) {
@@ -1049,12 +1035,12 @@ do_page(dbref player, const char *arg1, const char *arg2, dbref cause,
     page_return(player, good[i], "Idle", "IDLE", NULL);
   }
 
-  mush_free((Malloc_t) tbuf, "page_buff");
-  mush_free((Malloc_t) tbuf2, "page_buff");
+  mush_free(tbuf, "page_buff");
+  mush_free(tbuf2, "page_buff");
   if (msgbuf)
-    mush_free((Malloc_t) msgbuf, "page_buff");
+    mush_free(msgbuf, "page_buff");
   if (hp)
-    free((Malloc_t) hp);
+    free(hp);
 }
 
 
@@ -1071,7 +1057,7 @@ filter_found(dbref thing, const char *msg, int flag)
   char *filter;
   ATTR *a;
   char *p, *bp;
-  char *temp;                   /* need this so we don't leak memory     
+  char *temp;                   /* need this so we don't leak memory
                                  * by failing to free the storage
                                  * allocated by safe_uncompress
                                  */
@@ -1104,7 +1090,7 @@ filter_found(dbref thing, const char *msg, int flag)
       matched = local_wild_match_case(p, msg, AF_Case(a));
   }
 
-  free((Malloc_t) temp);
+  free(temp);
   return matched;
 }
 
@@ -1127,7 +1113,7 @@ make_prefixstr(dbref thing, const char *msg, char *tbuf1)
   bp = tbuf1;
 
   if (!a) {
-    safe_str("From ", tbuf1, &bp);
+    safe_str(T("From "), tbuf1, &bp);
     safe_str(Name(IsExit(thing) ? Source(thing) : thing), tbuf1, &bp);
     safe_str(", ", tbuf1, &bp);
   } else {
@@ -1141,7 +1127,7 @@ make_prefixstr(dbref thing, const char *msg, char *tbuf1)
     ap = asave;
     process_expression(tbuf1, &bp, &ap, thing, orator, orator,
                        PE_DEFAULT, PT_DEFAULT, NULL);
-    free((Malloc_t) asave);
+    free(asave);
     restore_global_regs("prefix_save", preserve);
     for (j = 0; j < 10; j++)
       global_eval_context.wenv[j] = wsave[j];
@@ -1392,7 +1378,6 @@ do_lemit(dbref player, const char *tbuf1, int flags)
 {
   /* give a message to the "absolute" location of an object */
   dbref room;
-  int rec = 0;
   int na_flags = NA_INTER_HEAR;
   int silent = (flags & PEMIT_SILENT) ? 1 : 0;
 
@@ -1400,18 +1385,8 @@ do_lemit(dbref player, const char *tbuf1, int flags)
   if (!Mobile(player))
     return;
 
-  /* prevent infinite loop if player is inside himself */
-  if (((room = Location(player)) == player) || !GoodObject(room)) {
-    notify(player, T("Invalid container object."));
-    do_rawlog(LT_ERR, T("** BAD CONTAINER **  #%d is inside #%d."), player,
-              room);
-    return;
-  }
-  while (!IsRoom(room) && (rec < 15)) {
-    room = Location(room);
-    rec++;
-  }
-  if (rec > 15) {
+  room = absolute_room(player);
+  if (!GoodObject(room) || !IsRoom(room)) {
     notify(player, T("Too many containers."));
     return;
   } else if (!Loud(player) && !eval_lock(player, room, Speech_Lock)) {
@@ -1487,11 +1462,7 @@ do_zemit(dbref player, const char *arg1, const char *arg2, int flags)
     notify(player, T("Permission denied."));
     return;
   }
-  /* this command is computationally expensive */
-  if (!payfor(player, FIND_COST)) {
-    notify(player, T("Sorry, you don't have enough money to do that."));
-    return;
-  }
+
   where = unparse_object(player, zone);
   notify_format(player, T("You zemit, \"%s\" in zone %s"), arg2, where);
 

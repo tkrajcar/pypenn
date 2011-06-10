@@ -1,25 +1,26 @@
-/* options.h */
+/* options.h -*- c -*- */
 
 #ifndef __OPTIONS_H
 #define __OPTIONS_H
 
 /* *********** READ THIS BEFORE YOU MODIFY ANYTHING IN THIS FILE *********** */
-/* WARNING:  All options in this file have the ability to significantly change
- * the look and feel and sometimes even internal behavior of the program.
- * The ones shipped as the default have been extensively tested.  Others have
- * been tested to a (usually) lesser degree, and therefore might still have
- * latent bugs.  If you change any of them from the default, PLEASE check
- * to make sure that you know the full effects of what you are changing. And
- * if you encounter any errors or compile time problems with any options
- * other than the default settings, PLEASE inform 
- * pennmush-bugs@pennmush.org
- * immediately, so that they can be fixed.  The same goes for any other bug
- * you might find in using this software.  All efforts will be made to fix
- * errors encountered, but unless given a FULL description of the error,
- * (IE telling me that logging in doesn't work is insufficient.  telling
- * me that logging in with WCREAT undefined still gives you the registration
- * message is a lot better.  MOST effective would be a full dbx trace, or a
- * patch for the bug.)  Enjoy using the program.
+/* WARNING: All options in this file have the ability to significantly
+ * change the look and feel and sometimes even internal behavior of
+ * the program.  The ones shipped as the default have been extensively
+ * tested.  Others have been tested to a (usually) lesser degree, and
+ * therefore might still have latent bugs.  If you change any of them
+ * from the default, PLEASE check to make sure that you know the full
+ * effects of what you are changing. And if you encounter any errors
+ * or compile time problems with any options other than the default
+ * settings, PLEASE file a ticket at
+ * http://code.google.com/p/pennmush/issues/list immediately, so that
+ * they can be fixed.  The same goes for any other bug you might find
+ * in using this software.  All efforts will be made to fix errors
+ * encountered, but unless given a FULL description of the error, (IE
+ * telling me that logging in doesn't work is insufficient.  telling
+ * me that logging in with WCREAT undefined still gives you the
+ * registration message is a lot better.  MOST effective would be a
+ * full gdb trace, or a patch for the bug.)  Enjoy using the program.
  */
 /***************************************************************************/
 
@@ -38,7 +39,7 @@
  *     when decompressing, and considerably slower when compressing.
  *     (But you decompress a lot more often). Compression ratio
  *     is worse than Huffman for small dbs (<1.5Mb of text), but
- *     better for larger dbs. 
+ *     better for larger dbs.
  * 4 - Raevnos's almost 8-bit clean version of the word-based algorithm.
  *     Prefer 3 unless you need extended characters. This algorithm
  *     can encode all characters except 0x06.
@@ -54,7 +55,7 @@
  * compression, you can also #define COMP_STATS to get some detailed
  * information in @stats/tables.
  */
-#define COMPRESSION_TYPE 1
+#define COMPRESSION_TYPE	1
 
 /*------------------------- MUSH Features ----------------------*/
 
@@ -64,18 +65,18 @@
  * the character you want to use in addition to +, enclosed in
  * single quotes, as in '=' or '.' or whatever. Don't define it to '+'!
  */
-/* #define CHAT_TOKEN_ALIAS '=' /* */
+/* #define CHAT_TOKEN_ALIAS /* */
 
 
 /*------------------------- Cosmetic Features --------------------*/
 
-/* If you're using the email registration feature, but want to 
+/* If you're using the email registration feature, but want to
  * use a mailer other than sendmail, put the full path to the mailer
  * program here. The mailer must accept the -t command-line
  * argument ("get the recipient address from the message header To:").
  * If it doesn't, you could probably write a wrapper for it.
  * Example: #define MAILER "/full/path/to/other/mailer"
  */
-/* #define MAILER "" /* */
+/* #define MAILER /* */
 
 #endif
