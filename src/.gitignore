@@ -1,5 +1,5 @@
 *.o
 netmud
-~netmud
+netmud~
 switchinc.c
 
