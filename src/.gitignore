@@ -1,5 +1,6 @@
 *.o
 netmud
 netmud~
+info_slave
 switchinc.c
 
