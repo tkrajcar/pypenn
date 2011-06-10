@@ -838,6 +838,9 @@ int
 ok_password(const char *password)
 {
   const unsigned char *scan;
+  if (password == NULL)
+    return 0;
+
   if (*password == '\0')
     return 0;
 

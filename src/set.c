@@ -60,59 +60,65 @@ static void copy_attrib_flags(dbref player, dbref target, ATTR *atr, int flags);
  * \param newname new name for object.
  */
 void
-do_name(dbref player, const char *name, char *newname)
+do_name(dbref player, const char *name, char *newname_)
 {
   dbref thing;
   char *eon;                    /* End Of Name */
+  char *bon;                    /* Beginning of name */
   char *myenv[10];
   int i;
-
-  newname = trim_space_sep(newname, ' ');
+  char *newname;
 
   if ((thing = match_controlled(player, name)) != NOTHING) {
+    newname = mush_strdup(trim_space_sep(newname_, ' '), "name.newname");
+    bon = newname;
+
     /* check for bad name */
     if ((*newname == '\0') || strchr(newname, '[')) {
       notify(player, T("Give it what new name?"));
+      mush_free(newname, "name.newname");
       return;
     }
     /* check for renaming a player */
     if (IsPlayer(thing)) {
-      if (*newname == '"') {
-        for (; *newname && ((*newname == '"')
-                            || isspace((unsigned char) *newname)); newname++) ;
-        eon = newname;
-        while (*eon && (*eon != '"')) {
-          while (*eon && (*eon != '"'))
-            eon++;
-          if (*eon == '"') {
-            *eon++ = '\0';
-            while (*eon && isspace((unsigned char) *eon))
-              eon++;
-            break;
-          }
+      // If it has "s, it's surrounding a spaced name, likely. So bon
+      // is beginning of name.
+      // I'm going to cheat here and make it so
+      // @name me="foo"bar names somebody foo, since " is an invalid name.
+      if (*bon == '"') {
+        bon++;
+        eon = bon;
+        while (*eon && *eon != '"') {
+          eon++;
+        }
+        if (*eon) {
+          *eon = '\0';
         }
       } else {
-        eon = newname;
+        eon = bon;
         while (*eon && !isspace((unsigned char) *eon))
           eon++;
         if (*eon)
-          *eon++ = '\0';
+          *(eon++) = '\0';
       }
-      if (!ok_player_name(newname, player, thing)) {
+      if (!ok_player_name(bon, player, thing)) {
         notify(player, T("You can't give a player that name."));
+        mush_free(newname, "name.newname");
         return;
       }
       /* everything ok, notify */
       do_log(LT_CONN, 0, 0, T("Name change by %s(#%d) to %s"),
-             Name(thing), thing, newname);
+             Name(thing), thing, bon);
       if (Suspect(thing))
         flag_broadcast("WIZARD", 0,
                        T("Broadcast: Suspect %s changed name to %s."),
-                       Name(thing), newname);
+                       Name(thing), bon);
       /* everything ok, we can fall through to change the name */
     } else {
+      bon = newname;
       if (!ok_name(newname)) {
         notify(player, T("That is not a reasonable name."));
+        mush_free(newname, "name.newname");
         return;
       }
     }
@@ -121,18 +127,19 @@ do_name(dbref player, const char *name, char *newname)
     myenv[0] = (char *) mush_malloc(BUFFER_LEN, "string");
     myenv[1] = (char *) mush_malloc(BUFFER_LEN, "string");
     mush_strncpy(myenv[0], Name(thing), BUFFER_LEN);
-    strcpy(myenv[1], newname);
+    strcpy(myenv[1], bon);
     for (i = 2; i < 10; i++)
       myenv[i] = NULL;
 
     if (IsPlayer(thing))
-      reset_player_list(thing, Name(thing), NULL, newname, NULL);
-    set_name(thing, newname);
+      reset_player_list(thing, Name(thing), NULL, bon, NULL);
+    set_name(thing, bon);
 
     if (!AreQuiet(player, thing))
       notify(player, T("Name set."));
     real_did_it(player, thing, NULL, NULL, "ONAME", NULL, "ANAME", NOTHING,
                 myenv, NA_INTER_PRESENCE);
+    mush_free(newname, "name.newname");
     mush_free(myenv[0], "string");
     mush_free(myenv[1], "string");
   }
@@ -994,7 +1001,7 @@ do_use(dbref player, const char *what)
 
   if ((thing =
        noisy_match_result(player, what, TYPE_THING,
-                          MAT_NEAR_THINGS)) != NOTHING) {
+                          MAT_NEAR_THINGS | MAT_ENGLISH)) != NOTHING) {
     if (!eval_lock(player, thing, Use_Lock)) {
       fail_lock(player, thing, Use_Lock, T("Permission denied."), NOTHING);
       return;

@@ -1357,6 +1357,14 @@ FUNCTION(fun_randword)
 
   s = trim_space_sep(args[0], sep);
   word_count = do_wordcount(s, sep);
+
+  if (word_count == 0)
+    return;
+  else if (word_count == 1) {
+    safe_strl(args[0], arglens[0], buff, bp);
+    return;
+  }
+
   word_index = get_random32(0, word_count - 1);
 
   /* Go to the start of the token we're interested in. */
@@ -2030,6 +2038,7 @@ FUNCTION(fun_member)
   char *s, *t;
   char sep;
   int el;
+  char needle[BUFFER_LEN], haystack[BUFFER_LEN];
 
   if (!delim_check(buff, bp, nargs, args, 3, &sep))
     return;
@@ -2038,12 +2047,16 @@ FUNCTION(fun_member)
     safe_str(T("#-1 CAN ONLY TEST ONE ELEMENT"), buff, bp);
     return;
   }
-  s = trim_space_sep(args[0], sep);
+
+  strncpy(haystack, remove_markup(args[0], NULL), BUFFER_LEN);
+  strncpy(needle, remove_markup(args[1], NULL), BUFFER_LEN);
+
+  s = trim_space_sep(haystack, sep);
   el = 1;
 
   do {
     t = split_token(&s, sep);
-    if (!strcmp(args[1], t)) {
+    if (!strcmp(needle, t)) {
       safe_integer(el, buff, bp);
       return;
     }

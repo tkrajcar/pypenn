@@ -332,6 +332,32 @@ is_uinteger(char const *str)
   return 1;
 }
 
+/** Is string really an unsigned integer?
+ * \param str string to check.
+ * \retval 1 string is an uinteger.
+ * \retval 0 string is not an uinteger.
+ */
+bool
+is_strict_uinteger(const char *str)
+{
+  char *end;
+
+  if (!str)
+    return 0;
+  /* strtoul() accepts negative numbers, so we still have to do this check */
+  while (isspace((unsigned char) *str))
+    str++;
+  if (*str == '\0')
+    return 0;
+  if (!(isdigit((unsigned char) *str) || *str == '+'))
+    return 0;
+  errno = 0;
+  parse_uint(str, &end, 10);
+  if (errno == ERANGE || *end != '\0')
+    return 0;
+  return 1;
+}
+
 /** Is string a number by the strict definition?
  * A strict number is a non-null string that passes strtod.
  * \param str string to check.

@@ -1378,32 +1378,6 @@ FUNCTION(fun_lsearch)
     mush_free(results, "search_results");
 }
 
-
-#ifdef WIN32
-#pragma warning( disable : 4761)        /* Disable bogus conversion warning */
-#endif
-/* ARGSUSED */
-FUNCTION(fun_hidden)
-{
-  dbref it = match_thing(executor, args[0]);
-  if (!See_All(executor)) {
-    notify(executor, T("Permission denied."));
-    safe_str("#-1", buff, bp);
-    return;
-  }
-  if ((it == NOTHING) || (!IsPlayer(it))) {
-    notify(executor, T("Couldn't find that player."));
-    safe_str("#-1", buff, bp);
-    return;
-  }
-  safe_boolean(hidden(it), buff, bp);
-  return;
-}
-
-#ifdef WIN32
-#pragma warning( default : 4761)        /* Re-enable conversion warning */
-#endif
-
 /* ARGSUSED */
 FUNCTION(fun_quota)
 {
@@ -1985,18 +1959,22 @@ raw_search(dbref player, const char *owner, int nargs, const char **args,
   ATTR *a;
   char lbuff[BUFFER_LEN];
 
-  /* make sure player has money to do the search */
-  if (!payfor(player, FIND_COST)) {
-    notify_format(player, T("Searches cost %d %s."), FIND_COST,
-                  ((FIND_COST == 1) ? MONEY : MONIES));
-    return -1;
-  }
-
   if (fill_search_spec(player, owner, nargs, args, &spec) < 0) {
     giveto(player, FIND_COST);
     if (spec.lock != TRUE_BOOLEXP)
       free_boolexp(spec.lock);
     return -1;
+  }
+
+  /* make sure player has money to do the search -
+   * But only if this does an eval or lock search. */
+  if ((spec.lock != TRUE_BOOLEXP) ||
+      spec.cmdstring[0] || spec.listenstring[0] || spec.eval[0]) {
+    if (!payfor(player, FIND_COST)) {
+      notify_format(player, T("Searches cost %d %s."), FIND_COST,
+                    ((FIND_COST == 1) ? MONEY : MONIES));
+      return -1;
+    }
   }
 
   is_wiz = Search_All(player) || See_All(player);

@@ -457,10 +457,12 @@ See also: controls(), TRUST, MISTRUST, ZONES, SHARED PLAYERS
 See also: MONEY, money(), score
 & CREDITS
   Maintainer: Raevnos [SW]
-  Developers: Javelin, Ervin Hearn III [EEH], Greg Millam [GM]
+  Developers: Ervin Hearn III [EEH], Greg Millam [GM], Mike Griffiths [MG],
+              Intrevis
   Past Porters: Nick Gammon [NJG] (win32), Dan Williams [DW] (MacOS), 
            Sylvia (OS/2)
-  Former developers: Rhyanna [RLM], Trivian [TN], Halatir [LdW], Talek [TAP]
+  Former developers: Rhyanna [RLM], Trivian [TN], Halatir [LdW], Talek [TAP],
+           Javelin
  
   The original TinyMUSH 1.0 code was written by Lawrence Foard, and
   was based upon James Aspnes' TinyMUD server. Since then, the code
@@ -1665,15 +1667,15 @@ See also: string functions
 & SUBSTITUTIONS3
 & %3
   Other substitutions:
-     %0-%9   = the contents of the REGISTERS 0-9, respectively
-     %@ = the caller's dbref number. Initially same as %#, changes when 
-          something like a U-FUNCTION is called.
-     %! = the dbref number of the object the command is on (the EXECUTOR)
-     %L = the dbref of the ENACTOR's location
-     %c = text of the last command, _before_ evaluation
-     %u = text of the last $command, after evaluation, available to locks
-     %? = The current function invocation and depth counts
-     %+ = The number of arguments passed to the current ufun.
+    %0-%9   = the contents of the REGISTERS 0-9, respectively
+    %@ = the caller's dbref number. Initially same as %#, changes when 
+         something like a U-FUNCTION is called.
+    %! = the dbref number of the object the command is on (the EXECUTOR)
+    %L = the dbref of the ENACTOR's location
+    %c = text of the last command, _before_ evaluation
+    %u = text of the last command, after evaluation, available to locks/hooks
+    %? = The current function invocation and depth counts
+    %+ = The number of arguments passed to the current ufun.
     %qN = the equivalent of r(N), a register set by a setq() function.
  
 (continued in help substitutions4)

@@ -311,25 +311,26 @@ FUNCTION(fun_r)
 /* ARGSUSED */
 FUNCTION(fun_rand)
 {
-  /*
-   * Uses Sh'dow's random number generator, found in utils.c.  Better
-   * distribution than original, w/ minimal speed losses.
-   */
-  int low, high;
-  if (!is_integer(args[0])) {
-    safe_str(T(e_int), buff, bp);
+  uint32_t low, high;
+  if (!is_strict_uinteger(args[0])) {
+    safe_str(T(e_uint), buff, bp);
     return;
   }
   if (nargs == 1) {
     low = 0;
-    high = parse_integer(args[0]) - 1;
-  } else {
-    if (!is_integer(args[1])) {
-      safe_str(T(e_ints), buff, bp);
+    high = parse_uinteger(args[0]);
+    if (high == 0) {
+      safe_str(T(e_range), buff, bp);
       return;
     }
-    low = parse_integer(args[0]);
-    high = parse_integer(args[1]);
+    high -= 1;
+  } else {
+    if (!is_strict_uinteger(args[1])) {
+      safe_str(T(e_uints), buff, bp);
+      return;
+    }
+    low = parse_uinteger(args[0]);
+    high = parse_uinteger(args[1]);
   }
 
   if (low > high) {
@@ -337,7 +338,7 @@ FUNCTION(fun_rand)
     return;
   }
 
-  safe_integer(get_random32(low, high), buff, bp);
+  safe_uinteger(get_random32(low, high), buff, bp);
 }
 
 /* ARGSUSED */

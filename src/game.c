@@ -832,7 +832,7 @@ init_game_dbs(void)
       create_minimal_db();
       return 0;
     }
-    
+
     penn_ungetc(c, f);
   }
 
@@ -1139,8 +1139,8 @@ process_command(dbref player, char *command, dbref cause, int from_port)
   strcpy(unp, command);
 
   cptr = command_parse(player, cause, command, from_port);
-  strcpy(global_eval_context.ucom, (cptr ? cptr : ""));
   if (cptr) {
+    mush_strncpy(global_eval_context.ucom, cptr, BUFFER_LEN);
     a = 0;
     if (!Gagged(player)) {
 
@@ -1455,7 +1455,7 @@ Listener(dbref thing)
   /* If a monitor flag is set on a room or thing, it's a listener.
    * Otherwise not (even if ^patterns are present)
    */
-  return (ThingListen(thing) || RoomListen(thing));
+  return has_flag_by_name(thing, "MONITOR", NOTYPE);
 }
 
 /** Reset all players' money.
@@ -2217,7 +2217,8 @@ db_open(const char *fname)
     pf->type = PFT_GZFILE;
     pf->handle.g = gzopen(filename, "rb");
     if (!pf->handle.g) {
-      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename, strerror(errno));
+      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename,
+                strerror(errno));
       mush_free(pf, "pennfile");
       longjmp(db_err, 1);
     }
@@ -2305,7 +2306,8 @@ db_open_write(const char *fname)
     pf->type = PFT_GZFILE;
     pf->handle.g = gzopen(filename, "wb");
     if (!pf->handle.g) {
-      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename, strerror(errno));
+      do_rawlog(LT_ERR, "Unable to open %s with libz: %s\n", filename,
+                strerror(errno));
       mush_free(pf, "pennfile");
       longjmp(db_err, 1);
     }

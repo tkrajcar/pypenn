@@ -79,6 +79,7 @@ bool is_dbref(char const *str);
 bool is_objid(char const *str);
 bool is_integer(char const *str);
 bool is_uinteger(char const *str);
+bool is_strict_uinteger(const char *str);
 bool is_boolean(char const *str);
 
 /* Split a sep-delimited string into individual elements */

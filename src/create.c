@@ -89,7 +89,9 @@ do_real_open(dbref player, const char *direction, const char *linkto,
 {
   dbref loc =
     (pseudo !=
-     NOTHING) ? pseudo : (IsExit(player) ? Source(player) : Location(player));
+     NOTHING) ? pseudo : (IsExit(player) ? Source(player) : (IsRoom(player) ?
+                                                             player :
+                                                             Location(player)));
   dbref new_exit;
   if (!command_check_byname(player, "@dig")) {
     notify(player, "Permission denied.");
@@ -508,8 +510,10 @@ clone_object(dbref player, dbref thing, const char *newname, int preserve)
 
   clone = new_object();
 
+  /* Need to figure out why this is here. */
   memcpy(REFDB(clone), REFDB(thing), sizeof(struct object));
   Owner(clone) = Owner(player);
+  Name(clone) = NULL;
   if (newname && *newname)
     set_name(clone, newname);
   else

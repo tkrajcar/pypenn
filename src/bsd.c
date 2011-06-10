@@ -665,9 +665,8 @@ main(int argc, char **argv)
   shutdown_checkpoint();
 #endif
   WSACleanup();                 /* clean up */
-#else
-  exit(0);
 #endif
+  exit(0);
 }
 #endif                          /* BOOLEXP_DEBUGGING */
 
@@ -3147,7 +3146,7 @@ announce_connect(dbref player, int isnew, int num)
   if (isnew) {
     /* A brand new player created. */
     snprintf(tbuf1, BUFFER_LEN, T("%s created."), Name(player));
-    flag_broadcast(0, "MONITOR", "%s %s", T("GAME:"), tbuf1);
+    flag_broadcast(0, "HEAR_CONNECT", "%s %s", T("GAME:"), tbuf1);
     if (Suspect(player))
       flag_broadcast("WIZARD", 0, T("GAME: Suspect %s created."), Name(player));
   }
@@ -3168,9 +3167,10 @@ announce_connect(dbref player, int isnew, int num)
     flag_broadcast("WIZARD", 0, T("GAME: Suspect %s"), tbuf1);
 
   if (Dark(player)) {
-    flag_broadcast("ROYALTY WIZARD", "MONITOR", "%s %s", T("GAME:"), tbuf1);
+    flag_broadcast("ROYALTY WIZARD", "HEAR_CONNECT", "%s %s", T("GAME:"),
+                   tbuf1);
   } else
-    flag_broadcast(0, "MONITOR", "%s %s", T("GAME:"), tbuf1);
+    flag_broadcast(0, "HEAR_CONNECT", "%s %s", T("GAME:"), tbuf1);
 
   if (ANNOUNCE_CONNECTS)
     chat_player_announce(player, message, num == 1);
@@ -3385,9 +3385,10 @@ announce_disconnect(DESC *saved)
   if (Suspect(player))
     flag_broadcast("WIZARD", 0, T("GAME: Suspect %s"), tbuf1);
   if (Dark(player)) {
-    flag_broadcast("ROYALTY WIZARD", "MONITOR", "%s %s", T("GAME:"), tbuf1);
+    flag_broadcast("ROYALTY WIZARD", "HEAR_CONNECT", "%s %s", T("GAME:"),
+                   tbuf1);
   } else
-    flag_broadcast(0, "MONITOR", "%s %s", T("GAME:"), tbuf1);
+    flag_broadcast(0, "HEAR_CONNECT", "%s %s", T("GAME:"), tbuf1);
 
   if (num < 2) {
     clear_flag_internal(player, "CONNECTED");
@@ -3710,6 +3711,39 @@ FUNCTION(fun_lwho)
   }
 }
 
+#ifdef WIN32
+#pragma warning( disable : 4761)        /* Disable bogus conversion warning */
+#endif
+/* ARGSUSED */
+FUNCTION(fun_hidden)
+{
+  if (!See_All(executor)) {
+    notify(executor, T("Permission denied."));
+    safe_str("#-1", buff, bp);
+    return;
+  }
+  if (is_strict_integer(args[0])) {
+    DESC *d = lookup_desc(executor, args[0]);
+    if (!d) {
+      notify(executor, T("Couldn't find that descriptor."));
+      safe_str("#-1", buff, bp);
+      return;
+    }
+    safe_boolean(Hidden(d), buff, bp);
+  } else {
+    dbref it = match_thing(executor, args[0]);
+    if ((it == NOTHING) || (!IsPlayer(it))) {
+      notify(executor, T("Couldn't find that player."));
+      safe_str("#-1", buff, bp);
+      return;
+    }
+    safe_boolean(hidden(it), buff, bp);
+  }
+}
+
+#ifdef WIN32
+#pragma warning( default : 4761)        /* Re-enable conversion warning */
+#endif
 
 /** Look up a DESC by character name or file descriptor.
  * \param executor the dbref of the object calling the function calling this.

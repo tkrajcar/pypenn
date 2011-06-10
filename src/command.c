@@ -89,7 +89,7 @@ COMLIST commands[] = {
   {"@ATRCHOWN", NULL, cmd_atrchown, CMD_T_ANY | CMD_T_EQSPLIT, 0, 0},
 
   {"@ATTRIBUTE", "ACCESS DELETE RENAME RETROACTIVE", cmd_attribute,
-   CMD_T_ANY | CMD_T_EQSPLIT, "WIZARD", 0},
+   CMD_T_ANY | CMD_T_EQSPLIT, 0, 0},
   {"@BOOT", "PORT ME SILENT", cmd_boot, CMD_T_ANY, 0, 0},
   {"@BREAK", NULL, cmd_break, CMD_T_ANY | CMD_T_EQSPLIT | CMD_T_RS_NOPARSE, 0,
    0},
@@ -214,7 +214,7 @@ COMLIST commands[] = {
   {"@NEWPASSWORD", NULL, cmd_newpassword, CMD_T_ANY | CMD_T_EQSPLIT
    | CMD_T_RS_NOPARSE, "WIZARD", 0},
   {"@NOTIFY", "ALL ANY", cmd_notify_drain, CMD_T_ANY | CMD_T_EQSPLIT, 0, 0},
-  {"@NSCEMIT", "NOEVAL NOISY SPOOF", cmd_cemit,
+  {"@NSCEMIT", "NOEVAL NOISY SILENT SPOOF", cmd_cemit,
    CMD_T_ANY | CMD_T_EQSPLIT | CMD_T_NOGAGGED, "WIZARD", "CAN_NSPEMIT"},
   {"@NSEMIT", "ROOM NOEVAL SILENT SPOOF", cmd_emit, CMD_T_ANY | CMD_T_NOGAGGED,
    "WIZARD", "CAN_NSPEMIT"},
@@ -1290,53 +1290,56 @@ command_parse(dbref player, dbref cause, char *string, int fromport)
   }
 
 
-  /* Finish setting up commandraw, if we may need it for hooks */
-  if (has_hook(&cmd->hooks.ignore) || has_hook(&cmd->hooks.override)) {
-    p = command2;
-    if (*p && (*p == ' ')) {
-      safe_chr(' ', commandraw, &c2);
-      p++;
-    }
-    if (cmd->type & CMD_T_ARGS) {
-      int lsa_index;
-      if (lsa[1]) {
-        safe_str(lsa[1], commandraw, &c2);
-        for (lsa_index = 2; lsa[lsa_index]; lsa_index++) {
-          safe_chr(',', commandraw, &c2);
-          safe_str(lsa[lsa_index], commandraw, &c2);
-        }
-      }
-    } else {
-      safe_str(ls, commandraw, &c2);
-    }
-    if (cmd->type & CMD_T_EQSPLIT) {
-      if (rhs_present) {
-        safe_chr('=', commandraw, &c2);
-        if (cmd->type & CMD_T_RS_ARGS) {
-          int rsa_index;
-          /* This is counterintuitive, but rsa[]
-           * starts at 1. */
-          if (rsa[1]) {
-            safe_str(rsa[1], commandraw, &c2);
-            for (rsa_index = 2; rsa[rsa_index]; rsa_index++) {
-              safe_chr(',', commandraw, &c2);
-              safe_str(rsa[rsa_index], commandraw, &c2);
-            }
-          }
-        } else {
-          safe_str(rs, commandraw, &c2);
-        }
-      }
-#ifdef NEVER
-      /* We used to do this, but we're not sure why */
-      process_expression(commandraw, &c2, (const char **) &p, player, cause,
-                         cause, noevtoken ? PE_NOTHING :
-                         ((PE_DEFAULT & ~PE_EVALUATE) |
-                          PE_COMMAND_BRACES), PT_DEFAULT, NULL);
-#endif
-    }
-    *c2 = '\0';
+  /* Finish setting up commandraw, for hooks and %u */
+  p = command2;
+  if (attrib) {
+    safe_chr('/', commandraw, &c2);
+    safe_str(swp, commandraw, &c2);
   }
+  if (*p && (*p == ' ')) {
+    safe_chr(' ', commandraw, &c2);
+    p++;
+  }
+  if (cmd->type & CMD_T_ARGS) {
+    int lsa_index;
+    if (lsa[1]) {
+      safe_str(lsa[1], commandraw, &c2);
+      for (lsa_index = 2; lsa[lsa_index]; lsa_index++) {
+        safe_chr(',', commandraw, &c2);
+        safe_str(lsa[lsa_index], commandraw, &c2);
+      }
+    }
+  } else {
+    safe_str(ls, commandraw, &c2);
+  }
+  if (cmd->type & CMD_T_EQSPLIT) {
+    if (rhs_present) {
+      safe_chr('=', commandraw, &c2);
+      if (cmd->type & CMD_T_RS_ARGS) {
+        int rsa_index;
+        /* This is counterintuitive, but rsa[]
+         * starts at 1. */
+        if (rsa[1]) {
+          safe_str(rsa[1], commandraw, &c2);
+          for (rsa_index = 2; rsa[rsa_index]; rsa_index++) {
+            safe_chr(',', commandraw, &c2);
+            safe_str(rsa[rsa_index], commandraw, &c2);
+          }
+        }
+      } else {
+        safe_str(rs, commandraw, &c2);
+      }
+    }
+  }
+#ifdef NEVER
+  /* We used to do this, but we're not sure why */
+  process_expression(commandraw, &c2, (const char **) &p, player, cause,
+                     cause, noevtoken ? PE_NOTHING :
+                     ((PE_DEFAULT & ~PE_EVALUATE) |
+                      PE_COMMAND_BRACES), PT_DEFAULT, NULL);
+#endif
+  *c2 = '\0';
+  mush_strncpy(global_eval_context.ucom, commandraw, BUFFER_LEN);
 
   retval = NULL;
   if (cmd->func == NULL) {

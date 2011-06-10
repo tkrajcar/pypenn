@@ -739,6 +739,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_perl
+enable_zlib
 with_ssl
 with_pcre
 enable_sql
@@ -1390,6 +1391,7 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --disable-zlib          Don't use zlib for database compression.
   --disable-sql           Don't use SQL support
   --disable-ipv6          Don't use IPv6 networking
   --disable-nls           Don't use message-translation
@@ -13474,6 +13476,16 @@ _ACEOF
 fi
 
 
+
+# Check whether --enable-zlib was given.
+if test "${enable_zlib+set}" = set; then
+  enableval=$enable_zlib; enable_zlib=$enableval
+else
+  enable_zlib=yes
+fi
+
+if test "$enable_zlib" = "yes"; then
+
 { $as_echo "$as_me:$LINENO: checking for gzungetc in -lz" >&5
 $as_echo_n "checking for gzungetc in -lz... " >&6; }
 if test "${ac_cv_lib_z_gzungetc+set}" = set; then
@@ -13548,6 +13560,7 @@ _ACEOF
 
 fi
 
+fi
 
 # with_ssl=set
 

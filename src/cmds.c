@@ -69,14 +69,23 @@ COMMAND(cmd_atrlock)
 
 COMMAND(cmd_attribute)
 {
-  if (SW_ISSET(sw, SWITCH_ACCESS))
-    do_attribute_access(player, arg_left, arg_right,
-                        SW_ISSET(sw, SWITCH_RETROACTIVE));
-  else if (SW_ISSET(sw, SWITCH_DELETE))
-    do_attribute_delete(player, arg_left);
-  else if (SW_ISSET(sw, SWITCH_RENAME))
-    do_attribute_rename(player, arg_left, arg_right);
-  else
+  if (SW_ISSET(sw, SWITCH_ACCESS)) {
+    if (Wizard(player))
+      do_attribute_access(player, arg_left, arg_right,
+                          SW_ISSET(sw, SWITCH_RETROACTIVE));
+    else
+      notify(player, T("Permission denied."));
+  } else if (SW_ISSET(sw, SWITCH_DELETE)) {
+    if (Wizard(player))
+      do_attribute_delete(player, arg_left);
+    else
+      notify(player, T("Permission denied."));
+  } else if (SW_ISSET(sw, SWITCH_RENAME)) {
+    if (Wizard(player))
+      do_attribute_rename(player, arg_left, arg_right);
+    else
+      notify(player, T("Permission denied."));
+  } else
     do_attribute_info(player, arg_left);
 }
 
@@ -181,11 +190,11 @@ COMMAND(cmd_config)
     {
       int source = SW_ISSET(sw, SWITCH_SAVE) ? 2 : 1;
       if (source == 2) {
-	if (!God(player)) {
-	/* Only god can alter the original config file. */
-	  notify(player, T("You can't remake the world in your image."));
-	  return;
-	}     
+        if (!God(player)) {
+          /* Only god can alter the original config file. */
+          notify(player, T("You can't remake the world in your image."));
+          return;
+        }
       }
       if (!config_set(arg_left, arg_right, source, 0)
           && !config_set(arg_left, arg_right, source, 1))

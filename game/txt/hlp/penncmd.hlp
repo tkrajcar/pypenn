@@ -769,7 +769,7 @@ See also: accent(), @nameformat
   Example: Show the room's zone after its name.
   @nameformat here = %1 [if(isdbref(zone(%0)),<[name(zone(%0))]>)]
 
-See also: @exitformat, @conformat, @descformat
+See also: @exitformat, @conformat, @descformat, @nameaccent
 & @cost
   @cost <object> = <amount> 
 
@@ -1509,12 +1509,11 @@ See also: help flags. See help @flag2 for information on @flag/add
   
   When used without any arguments, this command lists all global
   user-defined functions. For wizards and others with the Functions
-  power, it also lists the dbref number and attribute corresponding
-  to the listed functions.
+  power, it also lists the dbref number and attribute corresponding to
+  the listed functions.
 
-  When used with a function name, it displays some information
-  about how that function is parsed, and how many arguments it
-  takes.
+  When used with a function name, it displays some information about
+  how that function is parsed, and how many arguments it takes.
   
   <switch> can be one of:
   /disable, to disable a built in function.
@@ -1527,22 +1526,24 @@ See also: help flags. See help @flag2 for information on @flag/add
 (continued in help @function2)
 & @function2
   <object> can be anything that the player using the @function command
-  controls (if safer_ufun is enabled) or can examine (if not). 
-  <function name> must be 30 characters or less. 
+  controls (if safer_ufun is enabled) or can examine (if not).
+  <function name> must be 30 characters or less.
 
   A function defined using @function works just like any of the normal
   MUSH functions, from the user's perspective. The functions are
-  executed by the object, with its powers. 
+  executed by the object, with its powers.
  
   Functions defined via @function should follow the format used by
   UFUN() - %0 is the first argument passed, %1 is the second argument
-  passed, and so forth. Optional third and fourth arguments to @function
-  can be used to set a parser-enforced number of arguments for the function.
-  An optional fifth argument will set restriction flags. 
+  passed, and so forth. Optional third and fourth arguments to
+  @function can be used to set a parser-enforced number of arguments
+  for the function.  If the maximum arguments is negative, any
+  additional comments are treated as part of the text of the last
+  argument. An optional fifth argument will set restriction flags.
 
-  The /preserve switch, for MUX compability, does the same thing as the
-  'localize' restriction - treats the attribute that's evaluated as if it 
-  were called with ulocal() instead of u().
+  The /preserve switch, for MUX compability, does the same thing as
+  the 'localize' restriction - treats the attribute that's evaluated
+  as if it were called with ulocal() instead of u().
   
   Example:
   
@@ -1559,7 +1560,7 @@ See also: help flags. See help @flag2 for information on @flag/add
   Global user-defined functions are not automatically loaded when the
   game is restarted. In order to avoid objects which attempt to use
   functions that have not been loaded, a @startup containing @function
-  commands should be set on a wizard object with as low a dbref number 
+  commands should be set on a wizard object with as low a dbref number
   as possible; object #1 (generally God) is suggested for this use.
 
   For example, if you have one object that stores all your global
@@ -1568,30 +1569,29 @@ See also: help flags. See help @flag2 for information on @flag/add
 
     @startup #1=@dol lattr(#100)=@function ##=#100,##
 
-  And then store each function as an attribute of the same name on 
+  And then store each function as an attribute of the same name on
   object #100.
 (continued in help @function4)
 & @function4
  Normally, built in functions cannot be overriden by @functions.
- However, if a built-in function is deleted with @function/delete,
- you can then make a @function with the same name. "Deleted" built-ins
- can still be called through the FN() function, and can have
- restrictions applied with @function/restrict/builtin.
- @function/restore will delete the @function and turn the built in
- version back on.
+ However, if a built-in function is deleted with @function/delete, you
+ can then make a @function with the same name. "Deleted" built-ins can
+ still be called through the FN() function, and can have restrictions
+ applied with @function/restrict/builtin.  @function/restore will
+ delete the @function and turn the built in version back on.
 
- Using @function on an already-added @function will delete the old one and
- install a new function with none of the settings of the old one kept.
+ Using @function on an already-added @function will delete the old one
+ and install a new function with none of the settings of the old one
+ kept.
 
  For example:
   @function/delete ansi
   &ansi_fun #1234=%1
-  @function ansi=#1234, ansi_fun, 2, 2, noguest
+  @function ansi=#1234, ansi_fun, 2, -2, noguest
 
- will create a new version of ansi() that doesn't do any
- colorization, and that requires it to be called with exactly
- 2 arguments, like the built-in version. It will be restricted to
- non-guest players.
+ will create a new version of ansi() that doesn't do any colorization,
+ and that needs two arguments, like the built-in version. It will be
+ restricted to non-guest players.
 
 See also: RESTRICT, FUNCTIONS, @startup, fn()
 & @grep
@@ -2754,7 +2754,7 @@ See also: @pemit, @nsprompt, prompt(), nsprompt(), PROMPT_NEWLINES
   can be used to disable the newline and is recommended for users with
   these clients.
 
-See also: @prompt, prompt()
+See also: @prompt, prompt(), terminfo()
 & @pemit
   @pemit[/<switch>] <object> = <message>
   
@@ -3064,14 +3064,24 @@ See also: @wall, @wizwall
   If <class>=LISTEN, then @search will only return objects that respond to
   <restriction> through a listen.
 
+  See "help @search4" for more.
+& @search4
+  
   For the class TYPE=PLAYER, and for PLAYER=<player-name>, anyone may
   obtain information on any player.  In all other cases, wizards may
   obtain information about other players, and players who pass a ZMP's
-  zone-lock may obtain information about the ZMP. This is computationally
-  expensive, costing 100 pennies. It is generally faster than @find.
+  zone-lock may obtain information about the ZMP.
+
+  Only one of any class can be specified. EVAL, EPLAYER, etc. all override
+  each other.
+
+  @search is only mildly computationally expensive for most of the search
+  classes.  computationally expensive searches are the evaluating searches
+  (EVAL, EPLAYER, ETHING/EOBJECT, EROOM, EEXIT) or the attribute pattern
+  searches (COMMAND, LISTEN)
   
-  See "help @search4" for some examples.
-& @search4
+  See "help @search5" for some examples.
+& @search5
   Examples:  
     @search flags=Wc      <-- search for connected wizards.
     @search type=room     <-- list all rooms owned by me.
@@ -3079,7 +3089,7 @@ See also: @wall, @wizwall
     @search Joe eval=1,100,200   <-- list objects from #100-#200 owned by Joe.
     @search eval=gt(money(##),10)     <-- list all objects owned by me  
                                           worth more than 10 coins.
-    @search all elock=FLAG^WIZARD|FLAG^ROYALTY   <-- list all players with
+    @search all elock=FLAG^WIZARD|FLAG^ROYALTY   <-- list all objects with
                                                   wizard or royalty flags.
     @search wizard_bc command=+who    <-- Forgot what object has your +who?
 
