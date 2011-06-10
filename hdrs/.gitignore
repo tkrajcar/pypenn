@@ -2,3 +2,4 @@ buildinf.h
 switches.h
 cmds.h
 funs.h
+svninfo.h
