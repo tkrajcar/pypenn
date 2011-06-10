@@ -247,10 +247,8 @@ void
 rusage_stats(void)
 {
   struct rusage usage;
-  int pid;
   int psize;
 
-  pid = getpid();
   psize = getpagesize();
   getrusage(RUSAGE_SELF, &usage);
 
@@ -318,9 +316,13 @@ dump_database_internal(void)
 
 #ifndef PROFILING
 #ifndef WIN32
+#ifdef __CYGWIN__
+  ignore_signal(SIGALRM);
+#else
   ignore_signal(SIGPROF);
-#endif
-#endif
+#endif                          /* __CYGWIN__ */
+#endif                          /* WIN32 */
+#endif                          /* PROFILING */
 
   if (setjmp(db_err)) {
     /* The dump failed. Disk might be full or something went bad with the
@@ -332,9 +334,13 @@ dump_database_internal(void)
       penn_fclose(f);
 #ifndef PROFILING
 #ifdef HAS_ITIMER
+#ifdef __CYGWIN__
+    install_sig_handler(SIGALRM, signal_cpu_limit);
+#else
     install_sig_handler(SIGPROF, signal_cpu_limit);
-#endif
-#endif
+#endif                          /* __CYGWIN__ */
+#endif                          /* HAS_ITIMER */
+#endif                          /* PROFILING */
     return false;
   } else {
     local_dump_database();
@@ -409,7 +415,11 @@ dump_database_internal(void)
 
 #ifndef PROFILING
 #ifdef HAS_ITIMER
+#ifdef __CYGWIN__
+  install_sig_handler(SIGALRM, signal_cpu_limit);
+#else
   install_sig_handler(SIGPROF, signal_cpu_limit);
+#endif
 #endif
 #endif
 
@@ -1251,9 +1261,11 @@ process_command(dbref player, char *command, dbref cause, int from_port)
   /* command has been executed. Free up memory. */
 
 done:
-  mush_free(errdblist, "errdblist");
-  errdblist = errdbtail = NULL;
-  errdbsize = ERRDB_INITIAL_SIZE;
+  if (errdblist) {
+    mush_free(errdblist, "errdblist");
+    errdblist = errdbtail = NULL;
+    errdbsize = ERRDB_INITIAL_SIZE;
+  }
 }
 
 
@@ -1263,9 +1275,23 @@ COMMAND(cmd_with)
   char *cptr = arg_right;
   dbref errdb;
 
-  what = noisy_match_result(player, arg_left, NOTYPE, MAT_NEARBY);
+  what = noisy_match_result(player, arg_left, NOTYPE, MAT_EVERYTHING);
   if (!GoodObject(what))
     return;
+  if (!(nearby(player, what) || Long_Fingers(player) || controls(player, what))) {
+    if (SW_ISSET(sw, SWITCH_ROOM)) {
+      if (what != MASTER_ROOM && what != Zone(player)) {
+        notify(player, T("I don't see that here."));
+        return;
+      } else if (what == Zone(player) && !IsRoom(what)) {
+        notify(player, T("Make room! Make room!"));
+        return;
+      }
+    } else if (what != Zone(player) || IsRoom(what)) {
+      notify(player, T("I don't see that here."));
+      return;
+    }
+  }
 
   errdbtail = errdblist;
   errdb = NOTHING;
@@ -1278,7 +1304,7 @@ COMMAND(cmd_with)
   } else {
     /* Run commands on objects in a masterish room */
 
-    if (!IsRoom(what)) {
+    if (!IsRoom(what) && what != Location(player)) {
       notify(player, T("Make room! Make room!"));
       return;
     }
